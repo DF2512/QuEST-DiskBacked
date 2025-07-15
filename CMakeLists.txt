@@ -182,6 +182,13 @@ if (ENABLE_TESTING)
   message(STATUS "Testing all deployments is turned ${TEST_ALL_DEPLOYMENTS}. Set TEST_ALL_DEPLOYMENTS to modify.")
 endif()
 
+# Storage device memory extension
+option(
+  USE_DISK_BACKED "Whether QuEST will use disk-backed state vectors. Turned OFF by default."
+  OFF
+)
+message(STATUS "Disk-backed state vectors are turned ${USE_DISK_BACKED}. Set USE_DISK_BACKED to modify.")
+
 # Multithreading
 option(
   ENABLE_MULTITHREADING 
@@ -459,6 +466,9 @@ add_executable(min_example
   examples/tutorials/min_example.c
 )
 target_link_libraries(min_example PRIVATE QuEST::QuEST)
+if(USE_DISK_BACKED)
+    target_compile_definitions(min_example PUBLIC USE_DISK_BACKED)
+endif()
 
 install(TARGETS min_example
   RUNTIME
@@ -505,6 +515,9 @@ if (USER_SOURCE AND OUTPUT_EXE)
 
   add_executable(${OUTPUT_EXE} ${USER_SOURCE})
   target_link_libraries(${OUTPUT_EXE} PUBLIC QuEST)
+  if(USE_DISK_BACKED)
+    target_compile_definitions(${OUTPUT_EXE} PUBLIC USE_DISK_BACKED)
+  endif()
   install(TARGETS ${OUTPUT_EXE} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   setup_quest_rpath(${OUTPUT_EXE})
 endif()

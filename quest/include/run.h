@@ -2,16 +2,17 @@
 #include "diskbackedstate.h"
 #include "gatescheduler.h"
 
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+
 void runPipeline(GateScheduler& scheduler, DiskBackedState& state, bool verbose = true);
 
 void applySubCircuitToBlock(const SubCircuit& sub, std::vector<qcomp>& buffer, int qubitsPerBlock);
 
 void applyTransitionAndRun(const SubCircuit& prev, const SubCircuit& next, DiskBackedState& state);
 
-#include <thread>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
 
 template <typename T>
 class ThreadSafeQueue {
