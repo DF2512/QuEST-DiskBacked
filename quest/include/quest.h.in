@@ -32,13 +32,13 @@
 
 
 // bind compile settings to installed exec
-#if !@MULTI_LIB_HEADERS@
-#cmakedefine FLOAT_PRECISION @FLOAT_PRECISION@
-#cmakedefine01 COMPILE_MPI
-#cmakedefine01 COMPILE_OPENMP
-#cmakedefine01 COMPILE_CUDA
-#cmakedefine01 COMPILE_CUQUANTUM
-#endif
+//#if !@MULTI_LIB_HEADERS@
+//#cmakedefine FLOAT_PRECISION @FLOAT_PRECISION@
+//#cmakedefine01 COMPILE_MPI
+//#cmakedefine01 COMPILE_OPENMP
+//#cmakedefine01 COMPILE_CUDA
+//#cmakedefine01 COMPILE_CUQUANTUM
+//#endif
 
 
 // include version first so it is accessible to 
@@ -64,6 +64,12 @@
 #include "quest/include/matrices.h"
 #include "quest/include/wrappers.h"
 
+#include "quest/include/diskbackedstate.h"
+#include "quest/include/gatescheduler.h"
+#include "quest/include/gates.h"
+#include "quest/include/chunkmanager.h"
+#include "quest/include/run.h"
+
 
 #if INCLUDE_DEPRECATED_FUNCTIONS
     #include "quest/include/deprecated.h"
@@ -71,4 +77,4 @@
 
 
 
-#endif // QUEST_H
+#endif QUEST_H

@@ -5,10 +5,11 @@ target_sources(QuEST
   accelerator.cpp
   autodeployer.cpp
   chunkmanager.cpp
-  diskbacked.cpp
+  diskbackedstate.cpp
   errors.cpp
   gates.cpp
   gatescheduler.cpp
+  hook.cpp
   localiser.cpp
   memory.cpp
   parser.cpp

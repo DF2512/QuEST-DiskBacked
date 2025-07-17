@@ -152,7 +152,7 @@ std::vector<GateOp> scheduleSwaps(const std::vector<std::pair<int, int>>& swaps)
 }
 
 
-void runPipeline(GateScheduler& scheduler, DiskBackedState& state, bool verbose) {
+void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) {
     int numQubits = state.getNumQubits();
     int numLocalQubits = state.getNumQubitsPerBlock();
     int numBlocks = state.getNumBlocks();

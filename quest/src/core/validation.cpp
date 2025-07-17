@@ -1116,7 +1116,7 @@ void validateconfig_setErrorHandler(void (*callback)(const char*, const char*)) 
  * their checks, to avoid superfluous computation.
  */
 
-static bool global_isValidationEnabled = true;
+static bool global_isValidationEnabled = false;
 
 void validateconfig_enable() {
     global_isValidationEnabled = true;

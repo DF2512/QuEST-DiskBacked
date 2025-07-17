@@ -463,9 +463,18 @@ add_subdirectory(quest)
 ## Examples
 
 add_executable(min_example
-  examples/tutorials/min_example.c
+  examples/tutorials/min_example.cpp
 )
 target_link_libraries(min_example PRIVATE QuEST::QuEST)
+
+# Add the same compile definitions that QuEST has
+target_compile_definitions(min_example PRIVATE 
+  COMPILE_MPI=0
+  COMPILE_OPENMP=1
+  COMPILE_CUDA=0
+  COMPILE_CUQUANTUM=0
+)
+
 if(USE_DISK_BACKED)
     target_compile_definitions(min_example PUBLIC USE_DISK_BACKED)
 endif()

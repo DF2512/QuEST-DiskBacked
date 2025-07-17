@@ -9,6 +9,7 @@
 #include "diskbackedstate.h"
 #include <vector>
 #include <string>
+#include <iostream>
 
 int main(void) {
 
@@ -19,11 +20,15 @@ int main(void) {
         "C:/quantum_chunks0",
         "D:/quantum_chunks1"
     };
-
+    
     DiskBackedState state(28, 8, 8, diskRoots);
-    state.diskBacked_initRandomPureState(8);
 
-    state.diskBacked_calcTotalProbability();
+    state.diskBacked_initRandomPureState();
+
+    double totalProb = state.diskBacked_calcTotalProbability();
+
+    std::cout << "Total probability: " << totalProb << "\n";
+
     finalizeQuESTEnv();
 
     return 0;

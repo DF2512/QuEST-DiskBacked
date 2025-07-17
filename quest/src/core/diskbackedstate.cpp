@@ -1,4 +1,7 @@
 #include "diskbackedstate.h"
+#include "quest/include/qureg.h"
+#include "quest/include/initialisations.h"
+#include "quest/include/hook.h"
 #include <filesystem>
 #include <iostream>
 #include <cmath>
@@ -25,8 +28,6 @@ DiskBackedState::DiskBackedState(int numQubits_, int numBlocks_, int chunksPerBl
         throw std::runtime_error("Amplitudes must divide evenly across chunks");
     }
 
-    
-
     generateChunkPaths();
 }
 
@@ -39,22 +40,15 @@ void DiskBackedState::generateChunkPaths() {
     }
 }
 
-
-
 PermutationTracker& DiskBackedState::getPermutationTracker() {
     return permTracker;
 }
-
-/*
-const PermutationTracker& DiskBackedState::getPermutationTracker() const {
-    return permTracker;
-}
-*/
 
 // Accessors
 int DiskBackedState::getChunksPerBlock() const { return chunksPerBlock; }
 int DiskBackedState::getMaxPermutableQubits() const {return maxPermutableQubits; }
 int DiskBackedState::getNumQubitsPerBlock() const { return numQubitsPerBlock; }
+int DiskBackedState::getNumQubitsPerChunk() const { return numQubitsPerChunk; }
 int DiskBackedState::getNumBlocks() const { return numBlocks; }
 int DiskBackedState::getNumQubits() const { return numQubits; }
 size_t DiskBackedState::getNumAmplitudes() const { return numAmplitudes; }
@@ -105,88 +99,6 @@ void DiskBackedState::saveChunk(size_t chunkIndex, const std::vector<qcomp>& buf
     if (written != ampsPerChunk) {
         throw std::runtime_error("saveChunk: write incomplete");
     }
-}
-
-void DiskBackedState::initialiseRandomState() {
-    std::cout << "[Init] Generating random amplitudes...\n";
-
-    double totalNormSq = 0.0;
-    std::vector<qcomp> buffer(ampsPerChunk);
-    std::mt19937_64 rng(42); // fixed seed for reproducibility
-    std::uniform_real_distribution<qreal> dist(-0.5, 0.5);
-
-    // ─── Pass 1: Generate and write random complex numbers ─────────
-    for (size_t chunk = 0; chunk < numChunks; ++chunk) {
-        for (size_t i = 0; i < ampsPerChunk; ++i) {
-            qreal re = dist(rng);
-            qreal im = dist(rng);
-            buffer[i] = qcomp(re, im);
-            totalNormSq += std::norm(buffer[i]);
-        }
-
-        if (chunk == 0) {
-            std::cout << "[Debug] First amplitude after generation: "
-                      << buffer[0] << "\n";
-        }
-
-        saveChunk(chunk, buffer);
-    }
-
-    std::cout << "[Init] Total norm² = " << totalNormSq << "\n";
-
-    // ─── Compute scaling factor ─────────────
-    qreal scale = 1.0 / std::sqrt(totalNormSq);
-    std::cout << "[Init] Applying scale factor: " << scale << "\n";
-
-    // ─── Pass 2: Normalize and save ─────────
-    for (int chunk = 0; chunk < static_cast<int>(numChunks); ++chunk) {
-        std::vector<qcomp> buf;
-        loadChunk(chunk, buf);
-
-        #pragma omp parallel for schedule(static)
-        for (int i = 0; i < static_cast<int>(buf.size()); ++i) {
-            buf[i] *= scale;
-        }
-
-        if (chunk == 0) {
-            std::cout << "[Debug] First amplitude after normalization: "
-                      << buf[0] << "\n";
-        }
-
-        saveChunk(chunk, buf);
-        buf.clear();
-        buf.shrink_to_fit();
-    }
-
-    std::cout << "[Init] Normalization complete.\n";
-}
-
-double DiskBackedState::computeTotalProbability() const {
-    std::cout << "[Measure] Computing total probability...\n";
-
-    double total = 0.0;
-
-    #pragma omp parallel for reduction(+:total)
-    for (int chunk = 0; chunk < static_cast<int>(numChunks); ++chunk) {
-        std::vector<qcomp> buf;
-        loadChunk(chunk, buf);
-
-        if (chunk == 0) {
-            std::cout << "[Debug] First amplitude during probability check: "
-                      << buf[0] << "\n";
-        }
-
-        double localSum = 0.0;
-        for (const qcomp& amp : buf)
-            localSum += std::norm(amp);
-
-        total += localSum;
-        buf.clear();
-        buf.shrink_to_fit();
-    }
-
-    std::cout << "[Measure] Total probability = " << total << "\n";
-    return total;
 }
 
 void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndices, std::vector<qcomp>& buffer) const {
@@ -250,4 +162,43 @@ void DiskBackedState::deleteAllChunkFiles() {
     for (const auto& file : chunkPaths) {
         std::remove(file.c_str());
     }
+}
+
+// creates a Qureg for each chunk in the disk-backed state
+void DiskBackedState::diskBacked_initRandomPureState() {
+    for (size_t chunk = 0; chunk < numChunks; ++chunk) {
+        Qureg chunkQureg = createForcedQureg(numQubitsPerChunk);
+        initRandomPureState(chunkQureg);
+        
+        // initialising the pure states normalises to 1 for each chunk.
+        // this then makes the total probability to be equal to the number
+        // of chunks, so we need to renormalise each chunk to have a total
+        // probability of 1 by dividing by the square root of the number of chunks.
+        // TOGO: is there a solution that preserves Haar randomness?
+        double square_root = std::sqrt(numChunks);        
+        for (qindex i = 0; i < ampsPerChunk; ++i) {
+            chunkQureg.cpuAmps[i] /= square_root;
+        }
+        
+        std::vector<qcomp> buffer(chunkQureg.cpuAmps, chunkQureg.cpuAmps + ampsPerChunk);
+        saveChunk(chunk, buffer);
+        destroyQureg(chunkQureg); 
+    }
+}
+
+double DiskBackedState::diskBacked_calcTotalProbability() const {
+    qreal total = 0.0;
+    
+    for (size_t i = 0; i < numChunks; ++i) {
+        std::vector<qcomp> buffer;
+        loadChunk(i, buffer);
+        
+        Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
+
+        std::cout << "First amplitude for chunk [" << i << "] = " << tempQureg.cpuAmps[0] << "\n"; 
+        total += calcTotalProb(tempQureg);
+        
+    }
+
+    return total;
 }

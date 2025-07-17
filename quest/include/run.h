@@ -7,7 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 
-void runPipeline(GateScheduler& scheduler, DiskBackedState& state, bool verbose = true);
+void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose = true);
 
 void applySubCircuitToBlock(const SubCircuit& sub, std::vector<qcomp>& buffer, int qubitsPerBlock);
 

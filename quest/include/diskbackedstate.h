@@ -5,6 +5,7 @@
 #include <complex>
 #include <types.h>
 #include "chunkmanager.h"
+#include "calculations.h"
 
 
 using qreal = double;
@@ -18,6 +19,7 @@ public:
     int getNumQubits() const;
     int getNumBlocks() const;
     int getNumQubitsPerBlock() const;
+    int getNumQubitsPerChunk() const;
     int getMaxPermutableQubits() const;
     int getChunksPerBlock() const;
     size_t getNumAmplitudes() const;
@@ -27,9 +29,10 @@ public:
     void saveChunk(size_t chunkIndex, const std::vector<qcomp>& buffer) const;
     void loadBlock(int blockIdx, const std::vector<int>& chunkIndices, std::vector<qcomp>& buffer) const;
     void saveBlock(int blockIdx, const std::vector<int>& chunkIndices, const std::vector<qcomp>& buffer) const;
-    void initialiseRandomState();
+    void diskBacked_initRandomPureState();
     void deleteAllChunkFiles();
     double computeTotalProbability() const;
+    double diskBacked_calcTotalProbability() const;
     ~DiskBackedState();
 
     PermutationTracker& getPermutationTracker(); // NEW
