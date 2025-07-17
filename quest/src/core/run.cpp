@@ -165,6 +165,12 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
     // Generate transitions
     std::vector<Transition> transitions = tracker.generateTransitions(subcircuits);
 
+    // Ensure current permutation is equal to the first subcircuit's permutation
+    if (tracker.currentPermutation != subcircuits[0].permutation) {
+        std::cerr << "[Error] Initial permutation does not match first subcircuit's permutation!\n";
+        return;
+    }
+
     std::cout << "[Pipeline] Generated " << transitions.size() << " transitions\n";
     for (size_t i = 0; i < transitions.size(); ++i) {
         std::cout << "[Pipeline] Transition " << i << ":\n";
@@ -180,6 +186,7 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
             std::cout << tracker.chunkMap[j] << " ";
         }
         std::cout << "\n";
+        tracker.currentPermutation = subcircuits[i].permutation;
 
         std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
 

@@ -174,7 +174,7 @@ void DiskBackedState::diskBacked_initRandomPureState() {
         // this then makes the total probability to be equal to the number
         // of chunks, so we need to renormalise each chunk to have a total
         // probability of 1 by dividing by the square root of the number of chunks.
-        // TOGO: is there a solution that preserves Haar randomness?
+        // TODO: is there a solution that preserves Haar randomness?
         double square_root = std::sqrt(numChunks);        
         for (qindex i = 0; i < ampsPerChunk; ++i) {
             chunkQureg.cpuAmps[i] /= square_root;

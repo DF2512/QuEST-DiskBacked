@@ -39,6 +39,7 @@ public:
     std::vector<int> areaSwapShuffle(const std::vector<int>& perm, int level, int max_level);
     void print_blocks(const std::vector<int>& chunk_map);
     std::vector<Transition> generateTransitions(const std::vector<SubCircuit>& subcircuits);
+    std::vector<int> currentPermutation;
 
     
 private:
@@ -50,7 +51,7 @@ private:
     int qubitsPerChunk;
     int numChunks;
 
-    std::vector<int> currentPermutation;
+    
     
 
     void computeChunkShuffle(const std::vector<int>& targetPerm);
