@@ -1,3 +1,5 @@
+#pragma once
+
 #include "gates.h"
 #include <numeric>
 #include <iostream>
@@ -11,24 +13,53 @@
 #include <deque>
 #include "gatescheduler.h"
 #include "chunkmanager.h" 
+#include "operations.h"
+#include "qureg.h"
 
-// ─── Add Gates ────────────────────────────────────────
-void GateScheduler::addSingleQubitGate(int target, std::function<void(qcomp&, qcomp&)> fn) {
-    schedule.push_back(GateOp{GateType::Single, target, -1, fn});
+// ─── Dispatcher: Apply a GateOp to a Qureg ─────────────
+void GateScheduler::applyGateOpToQureg(const GateOp& op, Qureg& qureg) {
+    switch (op.type) {
+        case GateType::Hadamard:
+            applyHadamard(qureg, op.target);
+            break;
+        case GateType::Phase:
+            applyPhaseShift(qureg, op.target, op.angle);
+            break;
+        case GateType::S:
+            applyS(qureg, op.target);
+            break;
+        case GateType::T:
+            applyT(qureg, op.target);
+            break;
+        case GateType::SqrtX:
+            applyRotateX(qureg, op.target, op.angle);
+            break;
+        case GateType::SqrtY:
+            applyRotateY(qureg, op.target, op.angle);
+            break;
+        case GateType::CNOT:
+            applyControlledPauliX(qureg, op.control, op.target);
+            break;
+        case GateType::ControlledPhase:
+            applyTwoQubitPhaseShift(qureg, op.control, op.target, op.angle);
+            break;
+        case GateType::CZ:
+            applyControlledPauliZ(qureg, op.control, op.target);
+            break;
+        case GateType::ControlledRK:
+            applyTwoQubitPhaseShift(qureg, op.control, op.target, op.angle);
+            break;
+        case GateType::Swap:
+            applySwap(qureg, op.target, op.control);
+            break;
+        // ... add more cases as needed
+        default:
+            std::cerr << "[GateScheduler] Unknown gate type in dispatcher!\n";
+            break;
+    }
 }
 
-void GateScheduler::addControlledGate(int control, int target, std::function<void(qcomp&, qcomp&)> fn) {
-    schedule.push_back(GateOp{GateType::Controlled, target, control, fn});
-}
-
-void GateScheduler::addSwapGate(int qubitA, int qubitB, std::function<void(std::vector<qcomp>&, int)> fn) {
-    schedule.push_back(GateOp{GateType::Swap, qubitA, qubitB, {}, fn});
-}
-
-const std::vector<GateOp>& GateScheduler::getSchedule() const {
-    return schedule;
-}
-
+// ─── Helper: Check if a Gate is Local ─────────────
 bool isGateLocal(const GateOp& gate, const std::vector<int>& layout, int numLocalQubits) {
     int n = layout.size();
     std::vector<int> logicalToPhysical(n);

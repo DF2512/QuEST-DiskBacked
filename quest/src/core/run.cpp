@@ -1,8 +1,9 @@
 #include "diskbackedstate.h"
 #include "gatescheduler.h"
 #include "run.h"
-#include "gates.h"
 #include "chunkmanager.h"
+#include "qureg.h"
+#include "hook.h"
 #include <vector>
 #include <iostream>
 #include <omp.h>
@@ -12,6 +13,8 @@
 #include <thread>
 #include <mutex>
 #include <optional>
+#include <numeric>
+#include <algorithm>
 
 // Shared memory pool counter
 std::mutex memMtx;
@@ -23,119 +26,35 @@ constexpr int maxBlocksInMemory = 3;
 // Apply all gates from a subcircuit to a single block buffer
 // ─────────────────────────────────────────────────────────────
 void applySubCircuitToBlock(const SubCircuit& sub, std::vector<qcomp>& buffer, int qubitsPerBlock) {
+    Qureg tempQureg = createTempQureg(buffer, qubitsPerBlock);
     for (const GateOp& gate : sub.gates) {
-        int target = sub.permutation[gate.target];
-        int control = (gate.control != -1) ? sub.permutation[gate.control] : -1;
-
-        if (gate.type == GateType::Swap) {
-            if (gate.bufferFn) {
-                gate.bufferFn(buffer, qubitsPerBlock);
-            }
-            continue;
-        }
-
-        qindex stride = 1ULL << target;
-        qindex blockSize = 2 * stride;
-        if (buffer.size() < blockSize) continue;
-
-        qindex numGroups = buffer.size() / blockSize;
-
-        #pragma omp parallel for schedule(static)
-        for (qindex g = 0; g < numGroups; ++g) {
-            qindex base = g * blockSize;
-            for (qindex i = 0; i < stride; ++i) {
-                qindex idx0 = base + i;
-                qindex idx1 = idx0 + stride;
-
-                if (gate.type == GateType::Single) {
-                    gate.fn(buffer[idx0], buffer[idx1]);
-                } else if (gate.type == GateType::Controlled) {
-                    if (((idx0 >> control) & 1) == 1)
-                        gate.fn(buffer[idx0], buffer[idx1]);
-                }
-            }
-        }
+        GateOp mappedGate = gate;
+        mappedGate.target = sub.permutation[gate.target];
+        if (gate.control != -1)
+            mappedGate.control = sub.permutation[gate.control];
+        GateScheduler::applyGateOpToQureg(mappedGate, tempQureg);
     }
 }
 
-
 void applySubCircuitToBlockDebug(const SubCircuit& sub, std::vector<qcomp>& buffer, int qubitsPerBlock) {
     std::cout << "[Debug] Entering applySubCircuitToBlockDebug, buffer size: " << buffer.size() << ", qubitsPerBlock: " << qubitsPerBlock << "\n";
-    
     std::cout << "[Debug] SubCircuit has " << sub.gates.size() << " gates\n";
-    
     if (sub.gates.empty()) {
         std::cout << "[Debug] No gates to apply\n";
         return;
     }
-    
     std::cout << "[Debug] About to start gate loop\n";
-    
+    Qureg tempQureg = createTempQureg(buffer, qubitsPerBlock);
     for (size_t gateIdx = 0; gateIdx < sub.gates.size(); ++gateIdx) {
-        std::cout << "[Debug] Processing gate " << gateIdx << "\n";
-        
         const GateOp& gate = sub.gates[gateIdx];
-        std::cout << "[Debug] Gate " << gateIdx << " type: " << static_cast<int>(gate.type) << "\n";
-
-        int logicalTarget = gate.target;
-        int physicalTarget = sub.permutation[gate.target];
-        int logicalControl = gate.control;
-        int physicalControl = (gate.control != -1) ? sub.permutation[gate.control] : -1;
-
-        if (gate.type == GateType::Swap) {
-            std::cout << "[Debug] Gate #" << gateIdx << ": type=" << static_cast<int>(gate.type)
-                      << ", target=" << logicalTarget << ", control=" << logicalControl << "\n";
-            std::cout << "Gate #" << gateIdx << " | SWAP(" << logicalTarget << ", " << logicalControl << ")\n";
-            if (gate.bufferFn) {
-                gate.bufferFn(buffer, qubitsPerBlock);
-            }
-            continue;
-        }
-
-        qindex stride = 1ULL << physicalTarget;
-        qindex blockSize = 2 * stride;
-        if (buffer.size() < blockSize) continue;
-
-        qindex numGroups = buffer.size() / blockSize;
-
-        std::cout << "[Debug] Gate #" << gateIdx << ": type=" << static_cast<int>(gate.type)
-                  << ", target=" << logicalTarget << ", control=" << logicalControl << "\n";
-
-        if (logicalControl != -1) {
-            std::cout << "[Debug] Gate #" << gateIdx << ": type=" << static_cast<int>(gate.type)
-                      << ", target=" << logicalTarget << ", control=" << logicalControl << "\n";
-        }
-        std::cout << std::endl;
-
-        qindex debug_idx0 = 0;
-        qindex debug_idx1 = stride;
-
-        qcomp before0 = buffer[debug_idx0];
-        qcomp before1 = buffer[debug_idx1];
-
-        std::cout << "  Before gate: index " << debug_idx0 << " = " << before0
-                  << ", index " << debug_idx1 << " = " << before1 << std::endl;
-
-        #pragma omp parallel for schedule(static)
-        for (qindex g = 0; g < numGroups; ++g) {
-            qindex base = g * blockSize;
-            for (qindex i = 0; i < stride; ++i) {
-                qindex idx0 = base + i;
-                qindex idx1 = idx0 + stride;
-
-                if (gate.type == GateType::Single) {
-                    gate.fn(buffer[idx0], buffer[idx1]);
-                } else if (gate.type == GateType::Controlled) {
-                    if (((idx0 >> physicalControl) & 1) == 1)
-                        gate.fn(buffer[idx0], buffer[idx1]);
-                }
-            }
-        }
-
-        qcomp after0 = buffer[debug_idx0];
-        qcomp after1 = buffer[debug_idx1];
-        std::cout << "  After gate:  index " << debug_idx0 << " = " << after0
-                  << ", index " << debug_idx1 << " = " << after1 << std::endl;
+        GateOp mappedGate = gate;
+        mappedGate.target = sub.permutation[gate.target];
+        if (gate.control != -1)
+            mappedGate.control = sub.permutation[gate.control];
+        std::cout << "[Debug] Processing gate " << gateIdx << ", type: " << static_cast<int>(gate.type)
+                  << ", target: " << mappedGate.target << ", control: " << mappedGate.control
+                  << ", angle: " << mappedGate.angle << ", k: " << mappedGate.k << "\n";
+        GateScheduler::applyGateOpToQureg(mappedGate, tempQureg);
     }
 }
 
@@ -144,7 +63,7 @@ std::vector<GateOp> scheduleSwaps(const std::vector<std::pair<int, int>>& swaps)
     GateScheduler sched;
     for (const auto& [a, b] : swaps) {
         std::cout << "[Debug] Scheduling SWAP(" << a << ", " << b << ")\n";
-        addSwap(sched, a, b);
+        sched.addSwap(a, b);
     }
     auto result = sched.getSchedule();
     std::cout << "[Debug] scheduleSwaps returning " << result.size() << " gates\n";
@@ -218,7 +137,9 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
                     std::cout << "[Reader] Applying swap2 to block " << blockIdx << "\n";
                     SubCircuit swap2;
                     swap2.gates = scheduleSwaps(transitions[i-1].swap2);
-                    swap2.permutation = transitions[i-1].interimTarget;
+                    // Set permutation to identity for the block
+                    swap2.permutation.resize(qubitsPerBlock);
+                    std::iota(swap2.permutation.begin(), swap2.permutation.end(), 0);
                     if (blockIdx == 0)
                         applySubCircuitToBlockDebug(swap2, block.buffer, qubitsPerBlock);
                     else
@@ -258,7 +179,9 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
                 if (i < transitions.size() && !transitions[i].swap1.empty()) {
                     SubCircuit swap1;
                     swap1.gates = scheduleSwaps(transitions[i].swap1);
-                    swap1.permutation = subcircuits[i].permutation;
+                    // Set permutation to identity for the block
+                    swap1.permutation.resize(qubitsPerBlock);
+                    std::iota(swap1.permutation.begin(), swap1.permutation.end(), 0);
                     if (block.blockIdx == 0)
                         applySubCircuitToBlockDebug(swap1, block.buffer, qubitsPerBlock);
                     else
@@ -313,6 +236,21 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
             std::cout << "\n";
         }
     }
+
+    // After all processing, print only the first amplitude for each chunk in order
+    std::cout << "\n[Amplitude Dump] Printing the first amplitude for each chunk in order...\n";
+    size_t numChunks = state.getNumChunks();
+    for (size_t chunkIdx = 0; chunkIdx < numChunks; ++chunkIdx) {
+        std::vector<qcomp> buffer;
+        state.loadChunk(chunkIdx, buffer);
+        if (!buffer.empty()) {
+            std::cout << "Chunk [" << chunkIdx << "]: amp[0] = " << buffer[0] << "\n";
+        } else {
+            std::cout << "Chunk [" << chunkIdx << "]: (empty)\n";
+        }
+        buffer.clear();
+    }
+    std::cout << "[Amplitude Dump] Done printing first amplitudes.\n";
 }
 
 // Pipeline function without triple buffering, for benchmarking reasons

@@ -1,3 +1,4 @@
+/*
 #include "quest/include/gatescheduler.h"
 #include "types.h"
 #define _USE_MATH_DEFINES

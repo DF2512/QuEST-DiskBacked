@@ -7,10 +7,6 @@
 #include "chunkmanager.h"
 #include "calculations.h"
 
-
-using qreal = double;
-using qcomp = std::complex<qreal>;
-
 class DiskBackedState {
 public:
     DiskBackedState(int numQubits, int numBlocks, int chunksPerBlock,
@@ -34,26 +30,23 @@ public:
     double computeTotalProbability() const;
     double diskBacked_calcTotalProbability() const;
     ~DiskBackedState();
-
-    PermutationTracker& getPermutationTracker(); // NEW
-    //const PermutationTracker& getPermutationTracker() const;
-    
+    PermutationTracker& getPermutationTracker(); 
 
 private:
-    int numQubits;
-    int numBlocks;
-    int chunksPerBlock;
-    int numQubitsPerChunk;
-    int numQubitsPerBlock;
-    int maxPermutableQubits;
-    size_t numAmplitudes;
-    size_t numChunks;
-    size_t ampsPerChunk;
+    int numQubits; // total number of qubits in the state vector
+    int numBlocks; // number of blocks
+    int chunksPerBlock; // number of chunks per block
+    int numQubitsPerChunk; // number of qubits per chunk
+    int numQubitsPerBlock; // number of qubits per block
+    int maxPermutableQubits; // maximum number of non-local qubits that can be swapped in a single permutation
+    size_t numAmplitudes; // total number of amplitudes in the state vector
+    size_t numChunks; // total number of chunks
+    size_t ampsPerChunk; // number of amplitudes per chunk
 
     std::vector<std::string> diskRoots;
     std::vector<std::string> chunkPaths;
 
     PermutationTracker permTracker; // tracks current permutation and chunk map
 
-    void generateChunkPaths(); // internal helper
+    void generateChunkPaths(); // file initialisation
 };
