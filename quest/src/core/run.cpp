@@ -20,7 +20,16 @@
 std::mutex memMtx;
 std::condition_variable memCv;
 int inFlightBlocks = 0;
-constexpr int maxBlocksInMemory = 3;
+constexpr int maxBlocksInMemory = 1;
+
+// Helper: Given a logical qubit index, find its physical position in the permutation
+static int logicalToPhysical(const std::vector<int>& permutation, int logicalQubit) {
+    auto it = std::find(permutation.begin(), permutation.end(), logicalQubit);
+    if (it == permutation.end()) {
+        throw std::runtime_error("[run.cpp] logicalToPhysical: Logical qubit not found in permutation");
+    }
+    return static_cast<int>(std::distance(permutation.begin(), it));
+}
 
 // ─────────────────────────────────────────────────────────────
 // Apply all gates from a subcircuit to a single block buffer
@@ -29,9 +38,9 @@ void applySubCircuitToBlock(const SubCircuit& sub, std::vector<qcomp>& buffer, i
     Qureg tempQureg = createTempQureg(buffer, qubitsPerBlock);
     for (const GateOp& gate : sub.gates) {
         GateOp mappedGate = gate;
-        mappedGate.target = sub.permutation[gate.target];
+        mappedGate.target = logicalToPhysical(sub.permutation, gate.target);
         if (gate.control != -1)
-            mappedGate.control = sub.permutation[gate.control];
+            mappedGate.control = logicalToPhysical(sub.permutation, gate.control);
         GateScheduler::applyGateOpToQureg(mappedGate, tempQureg);
     }
 }
@@ -43,30 +52,70 @@ void applySubCircuitToBlockDebug(const SubCircuit& sub, std::vector<qcomp>& buff
         std::cout << "[Debug] No gates to apply\n";
         return;
     }
+    std::cout << "[Debug] Subcircuit permutation (physical->logical): ";
+    for (size_t i = 0; i < sub.permutation.size(); ++i) {
+        std::cout << i << "->" << sub.permutation[i] << " ";
+    }
+    std::cout << "\n";
+    // Print the block's logical qubits (physical pos -> logical qubit)
+    std::vector<int> blockLogicalQubits(qubitsPerBlock, -1);
+    for (int phys = 0; phys < qubitsPerBlock; ++phys) {
+        blockLogicalQubits[phys] = sub.permutation[phys];
+    }
+    std::cout << "[Debug] Block physical positions (0.." << (qubitsPerBlock-1) << ") contain logical qubits: ";
+    for (int i = 0; i < qubitsPerBlock; ++i) {
+        std::cout << i << "(logical " << blockLogicalQubits[i] << ") ";
+    }
+    std::cout << "\n";
     std::cout << "[Debug] About to start gate loop\n";
     Qureg tempQureg = createTempQureg(buffer, qubitsPerBlock);
     for (size_t gateIdx = 0; gateIdx < sub.gates.size(); ++gateIdx) {
         const GateOp& gate = sub.gates[gateIdx];
         GateOp mappedGate = gate;
-        mappedGate.target = sub.permutation[gate.target];
+        mappedGate.target = logicalToPhysical(sub.permutation, gate.target);
         if (gate.control != -1)
-            mappedGate.control = sub.permutation[gate.control];
-        std::cout << "[Debug] Processing gate " << gateIdx << ", type: " << static_cast<int>(gate.type)
-                  << ", target: " << mappedGate.target << ", control: " << mappedGate.control
-                  << ", angle: " << mappedGate.angle << ", k: " << mappedGate.k << "\n";
+            mappedGate.control = logicalToPhysical(sub.permutation, gate.control);
+        // Print a concise summary before applying the gate
+        std::cout << "[Debug] About to apply: type=" << static_cast<int>(gate.type)
+                  << ", logical target=" << gate.target << ", mapped target=" << mappedGate.target
+                  << ", logical control=" << gate.control << ", mapped control=" << mappedGate.control
+                  << ", angle=" << gate.angle << ", k=" << gate.k
+                  << " to Qureg of size " << qubitsPerBlock << " (block-local buffer)\n";
+        // Check if mapped target/control are within block
+        bool targetInBlock = mappedGate.target >= 0 && mappedGate.target < qubitsPerBlock;
+        bool controlInBlock = (gate.control == -1) || (mappedGate.control >= 0 && mappedGate.control < qubitsPerBlock);
+        if (!targetInBlock || !controlInBlock) {
+            std::cout << "[ERROR] Gate refers to a qubit not present in this block!\n";
+            std::cout << "  Gate: type " << static_cast<int>(gate.type)
+                      << ", logical target: " << gate.target << ", mapped target: " << mappedGate.target
+                      << ", logical control: " << gate.control << ", mapped control: " << mappedGate.control << "\n";
+            std::cout << "  Block logical qubits: ";
+            for (int i = 0; i < qubitsPerBlock; ++i) {
+                std::cout << i << "(logical " << blockLogicalQubits[i] << ") ";
+            }
+            std::cout << "\n  Subcircuit permutation: ";
+            for (size_t i = 0; i < sub.permutation.size(); ++i) {
+                std::cout << i << "->" << sub.permutation[i] << " ";
+            }
+            std::cout << "\n";
+        }
         GateScheduler::applyGateOpToQureg(mappedGate, tempQureg);
     }
 }
 
 std::vector<GateOp> scheduleSwaps(const std::vector<std::pair<int, int>>& swaps) {
-    std::cout << "[Debug] scheduleSwaps called with " << swaps.size() << " swaps\n";
+    //std::cout << "[Debug] scheduleSwaps called with " << swaps.size() << " swaps\n";
     GateScheduler sched;
     for (const auto& [a, b] : swaps) {
-        std::cout << "[Debug] Scheduling SWAP(" << a << ", " << b << ")\n";
+        //std::cout << "[Debug] Scheduling SWAP(" << a << ", " << b << ")\n";
         sched.addSwap(a, b);
     }
     auto result = sched.getSchedule();
-    std::cout << "[Debug] scheduleSwaps returning " << result.size() << " gates\n";
+    //std::cout << "[Debug] scheduleSwaps returning " << result.size() << " gates\n";
+    // Print the swaps for clarity
+    //for (const auto& op : result) {
+        //std::cout << "[Debug] SWAP gate: target " << op.target << ", control " << op.control << "\n";
+    //}
     return result;
 }
 
@@ -80,6 +129,38 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
 
     // Partition into subcircuits
     std::vector<SubCircuit> subcircuits = scheduler.partitionIntoSubcircuits(numQubits, numLocalQubits, state, verbose);
+
+    // === DEBUG: Print subcircuit partitioning and permutations ===
+    std::cout << "[DEBUG] Partitioned into " << subcircuits.size() << " subcircuits\n";
+    for (size_t i = 0; i < subcircuits.size(); ++i) {
+        const auto& sub = subcircuits[i];
+        //std::cout << "[DEBUG] Subcircuit " << i << ":\n";
+        //std::cout << "  Permutation: ";
+        for (size_t j = 0; j < sub.permutation.size(); ++j) {
+            std::cout << sub.permutation[j] << " ";
+        }
+        //std::cout << "\n";
+        //std::cout << "  Gates (type, target, control, angle, k):\n";
+        for (size_t g = 0; g < sub.gates.size(); ++g) {
+            const auto& gate = sub.gates[g];
+            //std::cout << "    [" << g << "] type: " << static_cast<int>(gate.type)
+                      //<< ", target: " << gate.target
+                      //<< ", control: " << gate.control
+                      //<< ", angle: " << gate.angle
+                      //<< ", k: " << gate.k << "\n";
+        }
+    }
+    // Also print the blockChunkMapping for the first subcircuit
+    std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
+    //std::cout << "[DEBUG] Block-chunk mapping for first subcircuit (block -> chunk indices):\n";
+    //for (size_t b = 0; b < blockChunkMapping.size(); ++b) {
+        //std::cout << "  Block " << b << ": ";
+        //for (size_t c = 0; c < blockChunkMapping[b].size(); ++c) {
+            //std::cout << blockChunkMapping[b][c] << " ";
+        //}
+        //std::cout << "\n";
+    //}
+    // === END DEBUG ===
 
     // Generate transitions
     std::vector<Transition> transitions = tracker.generateTransitions(subcircuits);
@@ -99,12 +180,31 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
     }
 
     for (size_t i = 0; i < subcircuits.size(); ++i) {
-        std::cout << "\n[Pipeline] Processing subcircuit " << i << "\n";
+        std::cout << "\n[Pipeline] Processing subcircuit " << i << " of " << subcircuits.size() << "\n";
+        std::cout << "[Pipeline] Subcircuit " << i << " has " << subcircuits[i].gates.size() << " gates\n";
+        std::cout << "[Pipeline] Subcircuit " << i << " permutation: ";
+        for (size_t p = 0; p < subcircuits[i].permutation.size(); ++p) {
+            std::cout << subcircuits[i].permutation[p] << " ";
+        }
+        std::cout << "\n";
         std::cout << "[Pipeline] Current chunkMap: ";
         for (int j = 0; j < tracker.chunkMap.size(); ++j) {
             std::cout << tracker.chunkMap[j] << " ";
         }
         std::cout << "\n";
+        std::cout << "[Pipeline] Current permutation: ";
+        for (size_t p = 0; p < tracker.currentPermutation.size(); ++p) {
+           std::cout << p << "->" << tracker.currentPermutation[p] << " ";
+        }
+        std::cout << "\n";
+        // Print the permutation used for this subcircuit
+        std::cout << "[Pipeline] Subcircuit " << i << " permutation (logical->physical): ";
+        for (size_t p = 0; p < subcircuits[i].permutation.size(); ++p) {
+            std::cout << p << "->" << subcircuits[i].permutation[p] << " ";
+        }
+        std::cout << "\n";
+        // IMPORTANT: The subcircuit's permutation must be used to map logical to physical qubits when applying gates.
+        // If bugs persist, consider backtracking and verifying the mapping logic in detail, as errors here can corrupt the state.
         tracker.currentPermutation = subcircuits[i].permutation;
 
         std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
@@ -134,7 +234,7 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
 
                 // Apply swap2 if not the first subcircuit
                 if (i > 0 && !transitions[i-1].swap2.empty()) {
-                    std::cout << "[Reader] Applying swap2 to block " << blockIdx << "\n";
+                    //std::cout << "[Reader] Applying swap2 to block " << blockIdx << "\n";
                     SubCircuit swap2;
                     swap2.gates = scheduleSwaps(transitions[i-1].swap2);
                     // Set permutation to identity for the block
@@ -216,9 +316,9 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
             }
             std::cout << "  Average: " << (sum / times.size()) << " s\n";
         };
-        printTimes("Reader", readerTimes);
-        printTimes("Processor", processorTimes);
-        printTimes("Writer", writerTimes);
+        //printTimes("Reader", readerTimes);
+        //printTimes("Processor", processorTimes);
+        //printTimes("Writer", writerTimes);
 
         // --- After all blocks processed, update chunkMap if not last subcircuit ---
         if (i < transitions.size()) {
@@ -228,29 +328,16 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
                 int maxLevel = *std::max_element(transitions[i].swapLevels.begin(), transitions[i].swapLevels.end());
                 std::vector<int> newChunkMap = tracker.areaSwapShuffle(tracker.chunkMap, level, maxLevel);
                 tracker.chunkMap = newChunkMap;
+                std::cout << "[Pipeline] New chunkMap after area swap: ";
+                for (int j = 0; j < tracker.chunkMap.size(); ++j) {
+                    std::cout << tracker.chunkMap[j] << " ";
+                }
+                std::cout << "\n";
             }
-            std::cout << "[Pipeline] New chunkMap: ";
-            for (int j = 0; j < tracker.chunkMap.size(); ++j) {
-                std::cout << tracker.chunkMap[j] << " ";
-            }
-            std::cout << "\n";
-        }
-    }
-
-    // After all processing, print only the first amplitude for each chunk in order
-    std::cout << "\n[Amplitude Dump] Printing the first amplitude for each chunk in order...\n";
-    size_t numChunks = state.getNumChunks();
-    for (size_t chunkIdx = 0; chunkIdx < numChunks; ++chunkIdx) {
-        std::vector<qcomp> buffer;
-        state.loadChunk(chunkIdx, buffer);
-        if (!buffer.empty()) {
-            std::cout << "Chunk [" << chunkIdx << "]: amp[0] = " << buffer[0] << "\n";
         } else {
-            std::cout << "Chunk [" << chunkIdx << "]: (empty)\n";
+            std::cout << "[Pipeline] No area swap shuffle for subcircuit " << i << " (last subcircuit)\n";
         }
-        buffer.clear();
-    }
-    std::cout << "[Amplitude Dump] Done printing first amplitudes.\n";
+    } 
 }
 
 // Pipeline function without triple buffering, for benchmarking reasons

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\build\CMakeFiles\b73cbc8d36937285751ea71f44e925c6\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{306BCF8F-36F3-3A29-9CD2-4ACEC5643BDF}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

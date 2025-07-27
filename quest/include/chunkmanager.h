@@ -67,3 +67,6 @@ Transition generate_transition(
 */
 
 // ─── Full Permutation Transition (used by pipeline) ──────
+
+// Declaration for applySwaps
+std::vector<int> applySwaps(const std::vector<int>& permutation, const std::vector<std::pair<int, int>>& swaps);

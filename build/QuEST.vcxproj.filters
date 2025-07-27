@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\calculations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\channels.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\decoherence.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\environment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\initialisations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\matrices.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\modes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\operations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\paulis.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\qureg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\api\types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\comm\comm_config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\comm\comm_routines.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\accelerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\autodeployer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\chunkmanager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\diskbackedstate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\errors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\gatescheduler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\hook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\localiser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\memory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\printer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\randomiser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\run.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\utilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\core\validation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\cpu\cpu_config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\cpu\cpu_subroutines.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\gpu\gpu_config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\quest\src\gpu\gpu_subroutines.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Edinburgh\Dissertation\Code\QuEST4.1\QuEST\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{1512FFFC-435F-3906-A162-95FA57698F42}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

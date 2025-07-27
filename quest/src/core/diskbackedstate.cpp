@@ -121,11 +121,12 @@ void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndic
                   buffer.begin() + i * ampsPerChunk);
     }
 
-    std::cout << "[Disk] Loaded block " << blockIdx << " (chunks: ";
-    for (int c : chunkIndices) std::cout << c << " ";
-    std::cout << ")\n";
+    //std::cout << "[Disk] Loaded block " << blockIdx << " (chunks: ";
+    //for (int c : chunkIndices) std::cout << c << " ";
+    //std::cout << ")\n";
 }
 
+// saves a block of chunks to disk files
 void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndices, const std::vector<qcomp>& buffer) const {
     if (chunkIndices.size() != chunksPerBlock) {
         throw std::runtime_error("saveBlock: chunkIndices size mismatch");
@@ -149,9 +150,9 @@ void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndic
         saveChunk(chunkIdx, chunkBuf);
     }
 
-    std::cout << "[Disk] Saved block " << blockIdx << " (chunks: ";
-    for (int c : chunkIndices) std::cout << c << " ";
-    std::cout << ")\n";
+    //std::cout << "[Disk] Saved block " << blockIdx << " (chunks: ";
+    //for (int c : chunkIndices) std::cout << c << " ";
+    //std::cout << ")\n";
 }
 
 DiskBackedState::~DiskBackedState() {

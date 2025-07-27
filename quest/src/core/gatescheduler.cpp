@@ -1,6 +1,5 @@
 #pragma once
 
-#include "gates.h"
 #include <numeric>
 #include <iostream>
 #include <algorithm>
@@ -208,7 +207,8 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
             nextGates.push_back(gate);
             if (nextGates.size() >= 32) break;
         }
-
+        
+        
         // Update permutation for lookahead, but don't update the tracker
         perm = optimisePermutationWithLookahead(
             perm, nextGates,
@@ -217,6 +217,45 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
             verbose
         );
     }
+
+    // NOTE: This is a temporary bandaid fix. There is a bug where if the last qubit is correct
+    // on the penultimate subcircuit, it will not be restored correctly. Root cause is
+    // unknown. TODO: Fix this properly. For now, we can omit the runtime from this fix.
+
+    // Check if the final subcircuit ends with the highest qubit
+    bool needsTwoStepRestoration = false;
+    if (!result.empty()) {
+        const auto& lastSub = result.back();
+        if (lastSub.permutation.back() == numQubits - 1) {
+            needsTwoStepRestoration = true;
+        }
+    }
+
+    if (needsTwoStepRestoration) {
+        // Add first restoration step: identity with last 2 qubits swapped
+        SubCircuit firstRestoration;
+        firstRestoration.gates = {}; // Empty gates
+        firstRestoration.permutation.resize(numQubits);
+        std::iota(firstRestoration.permutation.begin(), firstRestoration.permutation.end(), 0);
+        // Swap the last two qubits
+        std::swap(firstRestoration.permutation[numQubits - 1], firstRestoration.permutation[numQubits - 2]);
+        result.push_back(firstRestoration);
+        
+        // Add second restoration step: true identity
+        SubCircuit secondRestoration;
+        secondRestoration.gates = {}; // Empty gates
+        secondRestoration.permutation.resize(numQubits);
+        std::iota(secondRestoration.permutation.begin(), secondRestoration.permutation.end(), 0);
+        result.push_back(secondRestoration);
+    } else {
+        // Add final empty subcircuit with identity permutation
+        SubCircuit finalSub;
+        finalSub.gates = {}; // Empty gates
+        finalSub.permutation.resize(numQubits);
+        std::iota(finalSub.permutation.begin(), finalSub.permutation.end(), 0); // Identity permutation
+        result.push_back(finalSub);
+    }
+    
 
     if (verbose) {
         std::cout << "\n[Partition] Total subcircuits: " << result.size() << "\n";

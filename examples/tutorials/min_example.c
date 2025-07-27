@@ -1,29 +1,28 @@
 /** @file
- * A minimum C++ example of running
- * QuEST with disk-backed state management.
+ * A minimum C/C++-agnostic example of running
+ * QuEST, reporting the execution environment
+ * and preparing 20-qubit random pure state.
  * 
  * @author Tyson Jones
 */
 
 #include "quest.h"
-#include "diskbackedstate.h"
-#include <vector>
-#include <string>
 
 int main(void) {
 
     initQuESTEnv();
     reportQuESTEnv();
 
-    std::vector<std::string> diskRoots = {
-        "C:/quantum_chunks0",
-        "D:/quantum_chunks1"
-    };
+    Qureg qureg = createForcedQureg(20);
+    reportQuregParams(qureg);
 
-    DiskBackedState state(28, 8, 8, diskRoots);
-    state.diskBacked_initRandomPureState(8);
+    initRandomPureState(qureg);
+    reportQureg(qureg);
 
-    state.diskBacked_calcTotalProbability();
+    qreal prob = calcTotalProb(qureg);
+    reportScalar("Total probability", prob);
+    
+    destroyQureg(qureg);
     finalizeQuESTEnv();
 
     return 0;

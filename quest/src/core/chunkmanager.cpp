@@ -44,65 +44,204 @@ vector<pair<int, int>> getSwapStepsToTarget(
     return steps;
 }
 
-// This functionn is the foundation of generating transitions, it creates the memory swap steps and provides the 'levels' to provide to the area swap shuffle
+// This functionn is the foundation of generating transitions, it creates the memory swap steps
 tuple<vector<pair<int, int>>, vector<pair<int, int>>, vector<int>>
 PermutationTracker::alignUpperQubitsAndGenerateInterim(
     const vector<int>& previous_permutation,
     const vector<int>& target_permutation
 ) {
-    vector<int> temp_interim = target_permutation;
-
-    int upper_start = qubitsPerBlock;
-    int upper_end = numQubits;
+    // Define region boundaries
+    int lower_start = 0;
+    int lower_end = qubitsPerChunk;
     int middle_start = qubitsPerChunk;
     int middle_end = qubitsPerBlock;
+    int upper_start = qubitsPerBlock;
+    int upper_end = numQubits;
 
-    vector<int> upper_qubits_prev(previous_permutation.begin() + upper_start, previous_permutation.begin() + upper_end);
-    set<int> upper_qubits_set(upper_qubits_prev.begin(), upper_qubits_prev.end());
+    // 1. Make interim_prev and interim_target
+    vector<int> interim_prev = previous_permutation;
+    vector<int> interim_target = target_permutation;
+    vector<pair<int, int>> swap1;
+    vector<pair<int, int>> swap2_rev;
 
-    vector<pair<int, int>> secondary_swaps;
-    int insertion_index = middle_start;
-
-    for (int q : upper_qubits_prev) {
-        auto it = find(temp_interim.begin(), temp_interim.end(), q);
-        int current_index = distance(temp_interim.begin(), it);
-
-        if (insertion_index >= middle_end)
-            throw runtime_error("Not enough room in middle segment to relocate qubits.");
-
-        if (current_index >= middle_start && current_index < middle_end) {
-            ++insertion_index;
+    // --- DEBUG: Print initial regions ---
+    std::cout << "[align] Initial interim_prev: ";
+    for (int v : interim_prev) std::cout << v << " ";
+    std::cout << "\n[align] Initial interim_target: ";
+    for (int v : interim_target) std::cout << v << " ";
+    std::cout << "\n[align] Lower region (prev): ";
+    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_prev[i] << " ";
+    std::cout << "\n[align] Middle region (prev): ";
+    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_prev[i] << " ";
+    std::cout << "\n[align] Upper region (prev): ";
+    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_prev[i] << " ";
+    std::cout << "\n";
+    std::cout << "[align] Lower region (target): ";
+    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_target[i] << " ";
+    std::cout << "\n[align] Middle region (target): ";
+    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_target[i] << " ";
+    std::cout << "\n[align] Upper region (target): ";
+    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_target[i] << " ";
+    std::cout << "\n";
+    // 2. For swap1: For each qubit q in the upper region of the target permutation
+    std::vector<bool> middle_used(middle_end - middle_start, false);
+    std::vector<bool> upper_preserved(upper_end - upper_start, false);
+    
+    // First pass: Mark qubits that are already in their correct positions in the upper region
+    for (int qidx = 0; qidx < upper_end - upper_start; ++qidx) {
+        int q = target_permutation[upper_start + qidx];
+        int target_pos = upper_start + qidx;
+        
+        // Check if q is already at its correct position in interim_prev
+        if (interim_prev[target_pos] == q) {
+            upper_preserved[qidx] = true;
+            std::cout << "[DEBUG] Preserving qubit " << q << " at position " << target_pos << " (already correct)" << std::endl;
+            
+            
+        }
+    }
+    
+    // Second pass: Process qubits that need to be moved, but skip preserved ones
+    for (int qidx = 0; qidx < upper_end - upper_start; ++qidx) {
+        int q = target_permutation[upper_start + qidx];
+        
+        // Skip if this qubit is already preserved in its correct position
+        if (upper_preserved[qidx]) {
             continue;
         }
-
-        if (current_index != insertion_index) {
-            swap(temp_interim[insertion_index], temp_interim[current_index]);
-            secondary_swaps.emplace_back(insertion_index, current_index);
+        
+        // Recheck all previous qs for correctness
+        for (int prev_qidx = 0; prev_qidx < qidx; ++prev_qidx) {
+            int prev_q = target_permutation[upper_start + prev_qidx];
+            auto it_up = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, prev_q);
+            if (it_up == interim_prev.begin() + upper_end) {
+                std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: prev_q " << prev_q << " not in upper region after supposed placement!" << std::endl;
+            }
         }
+        // If q is present in the upper region of interim_prev, do nothing
+        auto it_up = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, q);
+        if (it_up != interim_prev.begin() + upper_end) {
+            continue;
+        }
+        // Else if q is present in the middle region, mark that slot as used
+        auto it_mid = std::find(interim_prev.begin() + middle_start, interim_prev.begin() + middle_end, q);
+        if (it_mid != interim_prev.begin() + middle_end) {
+            int mid_idx = std::distance(interim_prev.begin() + middle_start, it_mid);
+            middle_used[mid_idx] = true;
+            continue;
+        }
+        // Else, search for q in interim_prev and swap it into the first available (unused) middle region slot
+        auto it = std::find(interim_prev.begin() + lower_start, interim_prev.begin() + middle_start, q);
+        if (it == interim_prev.begin() + middle_start) {
+            std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: q " << q << " not found in lower or middle region!" << std::endl;
+            continue;
+        }
+        // Find first available (unused) middle slot
+        int middle_slot = -1;
+        for (int m = 0; m < (middle_end - middle_start); ++m) {
+            if (!middle_used[m]) {
+                middle_slot = middle_start + m;
+                middle_used[m] = true;
+                break;
+            }
+        }
+        if (middle_slot == -1) {
+            std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: No available middle slot for swap1!" << std::endl;
+            continue;
+        }
+        int lower_idx = std::distance(interim_prev.begin(), it);
+        std::swap(interim_prev[lower_idx], interim_prev[middle_slot]);
+        swap1.emplace_back(lower_idx, middle_slot);
+        std::cout << "[DEBUG] swap1: Swapped lower_idx=" << lower_idx << " with middle_slot=" << middle_slot << " for q=" << q << std::endl;
+        
+        // Special debug for qubit 19
+        if (q == 19) {
+            std::cout << "[DEBUG] *** QUBIT 19 MOVED from position " << lower_idx << " to " << middle_slot << " ***" << std::endl;
+        }
+        
+        // After each q, recheck all previous qs
+        for (int prev_qidx = 0; prev_qidx <= qidx; ++prev_qidx) {
+            int prev_q = target_permutation[upper_start + prev_qidx];
+            auto it_up2 = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, prev_q);
+            if (it_up2 == interim_prev.begin() + upper_end) {
+                std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: prev_q " << prev_q << " not in upper region after swap!" << std::endl;
+            }
+        }
+    }
+    // --- DEBUG: Print after swap1 ---
+    std::cout << "[align] After swap1, interim_prev: ";
+    for (int v : interim_prev) std::cout << v << " ";
+    std::cout << "\n[align] Lower region (prev): ";
+    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_prev[i] << " ";
+    std::cout << "\n[align] Middle region (prev): ";
+    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_prev[i] << " ";
+    std::cout << "\n[align] Upper region (prev): ";
+    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_prev[i] << " ";
+    std::cout << "\n";
 
-        ++insertion_index;
+    // 3. For swap2: Make interim_target's lower region match interim_prev's lower region
+    while (true) {
+        bool all_match = true;
+        for (int i = lower_start; i < lower_end; ++i) {
+            if (interim_target[i] == interim_prev[i]) continue;
+            all_match = false;
+            // Find where interim_prev[i] is in lower+middle region of interim_target
+            auto it = std::find(interim_target.begin() + i + 1, interim_target.begin() + middle_end, interim_prev[i]);
+            if (it == interim_target.begin() + middle_end) {
+                std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: value " << interim_prev[i] << " not found in lower+middle region of interim_target!" << std::endl;
+                continue;
+            }
+            int j = std::distance(interim_target.begin(), it);
+            std::swap(interim_target[i], interim_target[j]);
+            swap2_rev.emplace_back(i, j);
+            std::cout << "[DEBUG] swap2_rev: Swapped " << i << " and " << j << " to match lower region" << std::endl;
+            // After a swap, restart from the beginning
+            break;
+        }
+        if (all_match) break;
+    }
+    // --- DEBUG: Print after swap2_rev ---
+    std::cout << "[align] After swap2_rev, interim_target: ";
+    for (int v : interim_target) std::cout << v << " ";
+    std::cout << "\n[align] Lower region (target): ";
+    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_target[i] << " ";
+    std::cout << "\n[align] Middle region (target): ";
+    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_target[i] << " ";
+    std::cout << "\n[align] Upper region (target): ";
+    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_target[i] << " ";
+    std::cout << "\n";
+
+    // 4. Check that the lower regions of interim_prev and interim_target match
+    bool lower_match = true;
+    for (int i = lower_start; i < lower_end; ++i) {
+        if (interim_prev[i] != interim_target[i]) {
+            lower_match = false;
+            break;
+        }
+    }
+    if (!lower_match) {
+        std::cerr << "[alignUpperQubitsAndGenerateInterim] WARNING: Lower regions of interim_prev and interim_target do not match!\n";
+        std::cerr << "  interim_prev lower: ";
+        for (int i = lower_start; i < lower_end; ++i) std::cerr << interim_prev[i] << " ";
+        std::cerr << "\n  interim_target lower: ";
+        for (int i = lower_start; i < lower_end; ++i) std::cerr << interim_target[i] << " ";
+        std::cerr << std::endl;
     }
 
-    vector<int> middle_qubits_now(temp_interim.begin() + middle_start, temp_interim.begin() + middle_end);
-    set<int> middle_qubits_set(middle_qubits_now.begin(), middle_qubits_now.end());
-
-    if (middle_qubits_set != upper_qubits_set)
-        throw runtime_error("Failed to align all upper qubits in the middle range.");
-
-    vector<int> interim_target = temp_interim;
-
-    for (int i = 0; i < upper_end - upper_start; ++i) {
-        swap(temp_interim[upper_start + i], temp_interim[middle_start + i]);
+    // 5. Check that the sets of the combined middle+upper regions match
+    std::set<int> interim_prev_middle_upper(interim_prev.begin() + middle_start, interim_prev.end());
+    std::set<int> interim_target_middle_upper(interim_target.begin() + middle_start, interim_target.end());
+    if (interim_prev_middle_upper != interim_target_middle_upper) {
+        std::cerr << "[alignUpperQubitsAndGenerateInterim] WARNING: Combined middle+upper region sets do not match!\n";
+        std::cerr << "  interim_prev middle+upper: ";
+        for (auto v : interim_prev_middle_upper) std::cerr << v << " ";
+        std::cerr << "\n  interim_target middle+upper: ";
+        for (auto v : interim_target_middle_upper) std::cerr << v << " ";
+        std::cerr << std::endl;
     }
 
-    vector<pair<int, int>> initial_swaps = getSwapStepsToTarget(
-        vector<int>(previous_permutation.begin(), previous_permutation.begin() + qubitsPerBlock),
-        vector<int>(temp_interim.begin(), temp_interim.begin() + qubitsPerBlock)
-    );
-
-    reverse(secondary_swaps.begin(), secondary_swaps.end());
-
-    return {initial_swaps, secondary_swaps, interim_target};
+    // 6. Return swap1, swap2_rev, interim_target
+    return {swap1, swap2_rev, interim_target};
 }
 
 // Helper function to apply swaps to a permutation
@@ -116,13 +255,13 @@ vector<int> applySwaps(const vector<int>& permutation, const vector<pair<int, in
 
 // Function to generate swap steps to match a target permutation
 vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
-    std::cout << "[DEBUG] swapToMatch called\n";
-    std::cout << "[DEBUG] current: ";
-    for (int c : current) std::cout << c << " ";
-    std::cout << "\n";
-    std::cout << "[DEBUG] target: ";
-    for (int t : target) std::cout << t << " ";
-    std::cout << "\n";
+    //std::cout << "[DEBUG] swapToMatch called\n";
+    //std::cout << "[DEBUG] current: ";
+    //for (int c : current) std::cout << c << " ";
+    //std::cout << "\n";
+    //std::cout << "[DEBUG] target: ";
+    //for (int t : target) std::cout << t << " ";
+    //std::cout << "\n";
 
     vector<int> steps;
 
@@ -132,39 +271,39 @@ vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
         auto it = find(current.begin() + i, current.end(), target[i]);
         int target_index = distance(current.begin(), it);
 
-        std::cout << "[DEBUG] Moving element " << target[i] << " from position " << target_index << " to " << i << "\n";
+        //std::cout << "[DEBUG] Moving element " << target[i] << " from position " << target_index << " to " << i << "\n";
 
         for (int j = target_index; j > (int)i; --j) {
             swap(current[j], current[j - 1]);
             steps.push_back(j);
-            std::cout << "[DEBUG] Added swap level: " << j << "\n";
+            //std::cout << "[DEBUG] Added swap level: " << j << "\n";
         }
     }
 
-    std::cout << "[DEBUG] swapToMatch returning " << steps.size() << " levels\n";
+    //std::cout << "[DEBUG] swapToMatch returning " << steps.size() << " levels\n";
     return steps;
 }
 
 // Function containing logic for chunk index permuting
 vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int level, int max_level) {
-    std::cout << "[DEBUG] areaSwapShuffle called with:\n";
-    std::cout << "[DEBUG] perm size: " << perm.size() << "\n";
-    std::cout << "[DEBUG] level: " << level << "\n";
-    std::cout << "[DEBUG] max_level: " << max_level << "\n";
+    //std::cout << "[DEBUG] areaSwapShuffle called with:\n";
+    //std::cout << "[DEBUG] perm size: " << perm.size() << "\n";
+    //std::cout << "[DEBUG] level: " << level << "\n";
+    //std::cout << "[DEBUG] max_level: " << max_level << "\n";
     
     int x = 1 << (max_level - level);
-    cout << "\n=== Shuffling with x = " << x << " ===\n";
-    cout << "[Debug] Starting area swap shuffle...\n";
+    //cout << "\n=== Shuffling with x = " << x << " ===\n";
+    //cout << "[Debug] Starting area swap shuffle...\n";
 
     if (perm.size() % x != 0)
         throw invalid_argument("Permutation length must be divisible by region size x.");
 
     int region_size = perm.size() / x;
     vector<int> new_perm;
-    cout << "[Debug] Processing " << x << " regions of size " << region_size << "\n";
+    //cout << "[Debug] Processing " << x << " regions of size " << region_size << "\n";
 
     for (int r = 0; r < x; ++r) {
-        if (r % 10 == 0) cout << "[Debug] Processing region " << r << "/" << x << "\n";
+        //if (r % 10 == 0) cout << "[Debug] Processing region " << r << "/" << x << "\n";
         
         int start = r * region_size;
         int end = start + region_size;
@@ -192,7 +331,7 @@ vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int lev
         new_perm.insert(new_perm.end(), area3.begin(), area3.end());
     }
     
-    cout << "[Debug] Area swap shuffle completed\n";
+    //cout << "[Debug] Area swap shuffle completed\n";
     return new_perm;
 }
 
@@ -267,6 +406,7 @@ Transition PermutationTracker::generateTransition(
 std::vector<Transition> PermutationTracker::generateTransitions(const std::vector<SubCircuit>& subcircuits) {
     std::vector<Transition> transitions;
 
+    // Generate transitions for all pairs, including the last one
     for (size_t i = 0; i < subcircuits.size() - 1; ++i) {
         const auto& prev = subcircuits[i];
         const auto& next = subcircuits[i + 1];
@@ -307,15 +447,15 @@ PermutationTracker::PermutationTracker(int numQubits_, int numBlocks_, int chunk
 
 // ─── Block-Chunk Mapping ──────────────────────────────
 std::vector<std::vector<int>> PermutationTracker::getBlockChunkMapping() const {
-    std::cout << "[PermutationTracker] Generating block-chunk mapping...\n";
-    std::cout << "  numBlocks: " << numBlocks << "\n";
-    std::cout << "  chunksPerBlock: " << chunksPerBlock << "\n";
-    std::cout << "  chunkMap.size(): " << chunkMap.size() << "\n";
+    //std::cout << "[PermutationTracker] Generating block-chunk mapping...\n";
+    //std::cout << "  numBlocks: " << numBlocks << "\n";
+    //std::cout << "  chunksPerBlock: " << chunksPerBlock << "\n";
+    //std::cout << "  chunkMap.size(): " << chunkMap.size() << "\n";
 
     std::vector<std::vector<int>> blocks(numBlocks);
 
     for (int i = 0; i < numBlocks; ++i) {
-        std::cout << "  Block " << i << ":\n";
+        //std::cout << "  Block " << i << ":\n";
         for (int j = 0; j < chunksPerBlock; ++j) {
             int flatIndex = i * chunksPerBlock + j;
 
@@ -328,13 +468,21 @@ std::vector<std::vector<int>> PermutationTracker::getBlockChunkMapping() const {
             }
 
             int chunk = chunkMap[flatIndex];
-            std::cout << "    chunkMap[" << flatIndex << "] = " << chunk << "\n";
+            //std::cout << "    chunkMap[" << flatIndex << "] = " << chunk << "\n";
 
             blocks[i].push_back(chunk);
         }
     }
 
-    std::cout << "[PermutationTracker] Block-chunk mapping complete.\n";
+    //std::cout << "[PermutationTracker] Block-chunk mapping complete.\n";
     return blocks;
+}
+
+const std::vector<int>& PermutationTracker::getCurrentPermutation() const {
+    return currentPermutation;
+}
+
+const std::vector<int>& PermutationTracker::getCurrentChunkMap() const {
+    return chunkMap;
 }
 

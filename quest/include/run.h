@@ -7,11 +7,11 @@
 #include <mutex>
 #include <condition_variable>
 
+std::vector<GateOp> scheduleSwaps(const std::vector<std::pair<int, int>>& swaps);
+
 void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose = true);
 
 void applySubCircuitToBlock(const SubCircuit& sub, std::vector<qcomp>& buffer, int qubitsPerBlock);
-
-void applyTransitionAndRun(const SubCircuit& prev, const SubCircuit& next, DiskBackedState& state);
 
 
 template <typename T>

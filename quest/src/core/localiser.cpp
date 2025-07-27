@@ -32,6 +32,7 @@
 #include <complex>
 #include <algorithm>
 #include <unordered_map>
+#include <iostream>
 
 using std::vector;
 using std::tuple;
@@ -1272,42 +1273,44 @@ void anyCtrlPauliTensorOrGadget(Qureg qureg, vector<int> ctrls, vector<int> ctrl
     assertValidCtrlStates(ctrls, ctrlStates);
     setDefaultCtrlStates(ctrls, ctrlStates);
 
-    // this routine is invalid for str=ZI
     if (!paulis_containsXOrY(str))
         error_localiserGivenPauliStrWithoutXorY();
 
-    // node has nothing to do if all local amps violate control condition
     if (!doAnyLocalStatesHaveQubitValues(qureg, ctrls, ctrlStates))
         return;
 
-    // retain only suffix control qubits, as relevant to local amp modification
     removePrefixQubitsAndStates(qureg, ctrls, ctrlStates);
 
-    // partition non-Id Paulis into prefix and suffix, since...
-    // - prefix X,Y determine communication, because they apply bit-not to rank
-    // - prefix Y,Z determine node-wide coefficient, because they contain rank-determined !=1 elements
-    // - suffix X,Y,Z determine local amp coefficients
-    auto [targsX, targsY, targsZ] = paulis_getSeparateInds(str, qureg);
-    auto [prefixX, suffixX] = util_getPrefixAndSuffixQubits(targsX, qureg);
-    auto [prefixY, suffixY] = util_getPrefixAndSuffixQubits(targsY, qureg);
-    auto [prefixZ, suffixZ] = util_getPrefixAndSuffixQubits(targsZ, qureg);
+    auto inds = paulis_getSeparateInds(str, qureg);
+    auto targsX = inds[0];
+    auto targsY = inds[1];
+    auto targsZ = inds[2];
 
-    // scale pair amp's coefficient by node-wide coeff 
-    pairAmpFac *= paulis_getPrefixPaulisElem(qureg, prefixY, prefixZ); // 1 when embarrassingly parallel
+    auto prefixX_suffixX = util_getPrefixAndSuffixQubits(targsX, qureg);
+    auto& prefixX = prefixX_suffixX[0];
+    auto& suffixX = prefixX_suffixX[1];
 
-    // embarrassingly parallel when there is only Z's in prefix
+    auto prefixY_suffixY = util_getPrefixAndSuffixQubits(targsY, qureg);
+    auto& prefixY = prefixY_suffixY[0];
+    auto& suffixY = prefixY_suffixY[1];
+
+    auto prefixZ_suffixZ = util_getPrefixAndSuffixQubits(targsZ, qureg);
+    auto& prefixZ = prefixZ_suffixZ[0];
+    auto& suffixZ = prefixZ_suffixZ[1];
+
+   
+
+    pairAmpFac *= paulis_getPrefixPaulisElem(qureg, prefixY, prefixZ);
+
     if (prefixX.empty() && prefixY.empty()) {
         accel_statevector_anyCtrlPauliTensorOrGadget_subA(qureg, ctrls, ctrlStates, suffixX, suffixY, suffixZ, ampFac, pairAmpFac);
         return;
     }
 
-    // otherwise, we pair-wise communicate amps satisfying ctrls
     auto prefixXY = util_getConcatenated(prefixX, prefixY);
     int pairRank = util_getRankWithQubitsFlipped(prefixXY, qureg);
     exchangeAmpsToBuffersWhereQubitsAreInStates(qureg, pairRank, ctrls, ctrlStates);
 
-    // ctrls reduce communicated amps, so received buffer is compacted;
-    // we must ergo prepare a no-ctrl XY mask for accessing buffer elems
     auto sortedCtrls = util_getSorted(ctrls);
     auto suffixMaskXY = util_getBitMask(util_getConcatenated(suffixX, suffixY));
     auto bufferMaskXY = removeBits(suffixMaskXY, sortedCtrls.data(), sortedCtrls.size());
@@ -1345,15 +1348,11 @@ void localiser_statevec_anyCtrlPhaseGadget(Qureg qureg, vector<int> ctrls, vecto
     anyCtrlZTensorOrGadget(qureg, ctrls, ctrlStates, targs, isGadget, phase); 
 }
 
-
 void localiser_statevec_anyCtrlPauliGadget(Qureg qureg, vector<int> ctrls, vector<int> ctrlStates, PauliStr str, qreal phase) {
-
-    // when str=IZ, we must use the above bespoke algorithm
     if (!paulis_containsXOrY(str)) {
         localiser_statevec_anyCtrlPhaseGadget(qureg, ctrls, ctrlStates, paulis_getInds(str), phase);
         return;
     }
-
     qcomp ampFac     = std::cos(phase);
     qcomp pairAmpFac = std::sin(phase) * 1_i;
     anyCtrlPauliTensorOrGadget(qureg, ctrls, ctrlStates, str, ampFac, pairAmpFac);
@@ -2008,9 +2007,17 @@ qcomp localiser_statevec_calcExpecPauliStr(Qureg qureg, PauliStr str) {
     // - suffix X,Y,Z determine local amp coefficients
     // noting that when !qureg.isDistributed, all paulis will be in suffix
     auto [targsX, targsY, targsZ] = paulis_getSeparateInds(str, qureg);
-    auto [prefixX, suffixX] = util_getPrefixAndSuffixQubits(targsX, qureg);
-    auto [prefixY, suffixY] = util_getPrefixAndSuffixQubits(targsY, qureg);
-    auto [prefixZ, suffixZ] = util_getPrefixAndSuffixQubits(targsZ, qureg);
+    auto prefixX_suffixX = util_getPrefixAndSuffixQubits(targsX, qureg);
+    auto& prefixX = prefixX_suffixX[0];
+    auto& suffixX = prefixX_suffixX[1];
+
+    auto prefixY_suffixY = util_getPrefixAndSuffixQubits(targsY, qureg);
+    auto& prefixY = prefixY_suffixY[0];
+    auto& suffixY = prefixY_suffixY[1];
+
+    auto prefixZ_suffixZ = util_getPrefixAndSuffixQubits(targsZ, qureg);
+    auto& prefixZ = prefixZ_suffixZ[0];
+    auto& suffixZ = prefixZ_suffixZ[1];
 
     // embarrassingly parallel when there is only Z's in prefix (which themselves are handled afterward)
     if (prefixX.empty() && prefixY.empty()) {
@@ -2096,9 +2103,17 @@ qcomp localiser_statevec_calcExpecPauliStrSum(Qureg qureg, PauliStrSum sum) {
         // for each term within the current group...
         for (auto& [str, coeff] : terms) {
             auto [targsX, targsY, targsZ] = paulis_getSeparateInds(str, qureg);
-            auto [prefixX, suffixX] = util_getPrefixAndSuffixQubits(targsX, qureg);
-            auto [prefixY, suffixY] = util_getPrefixAndSuffixQubits(targsY, qureg);
-            auto [prefixZ, suffixZ] = util_getPrefixAndSuffixQubits(targsZ, qureg);
+            auto prefixX_suffixX = util_getPrefixAndSuffixQubits(targsX, qureg);
+            auto& prefixX = prefixX_suffixX[0];
+            auto& suffixX = prefixX_suffixX[1];
+
+            auto prefixY_suffixY = util_getPrefixAndSuffixQubits(targsY, qureg);
+            auto& prefixY = prefixY_suffixY[0];
+            auto& suffixY = prefixY_suffixY[1];
+
+            auto prefixZ_suffixZ = util_getPrefixAndSuffixQubits(targsZ, qureg);
+            auto& prefixZ = prefixZ_suffixZ[0];
+            auto& suffixZ = prefixZ_suffixZ[1];
             
             // contribute coeff * prefix-coeff * suffix-sum
             qcomp termFactor = paulis_getPrefixPaulisElem(qureg, prefixY, prefixZ);

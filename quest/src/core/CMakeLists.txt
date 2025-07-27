@@ -7,7 +7,6 @@ target_sources(QuEST
   chunkmanager.cpp
   diskbackedstate.cpp
   errors.cpp
-  gates.cpp
   gatescheduler.cpp
   hook.cpp
   localiser.cpp

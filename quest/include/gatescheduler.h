@@ -97,6 +97,22 @@ public:
     void addSwap(int qubitA, int qubitB) {
         schedule.push_back(GateOp{GateType::Swap, qubitA, qubitB, 0.0, 0});
     }
+    // Add a full QFT
+    void addFullQFT(int numQubits) {
+        // Apply QFT to all qubits in reverse order
+        for (int n = numQubits - 1; n >= 0; n--) {
+            addHadamard(n);
+            for (int m = 0; m < n; m++) {
+                double arg = M_PI / (1 << (m + 1)); // 2^(m+1)
+                addControlledPhase(n, n - m - 1, arg);
+            }
+        }
+        // Apply SWAP gates to reverse the order
+        int mid = numQubits / 2;
+        for (int n = 0; n < mid; n++) {
+            addSwap(n, numQubits - 1 - n);
+        }
+    }
     // ... Add more gate types as needed
 
     // Get the full schedule
