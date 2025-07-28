@@ -4,6 +4,7 @@
 #include "qureg.h"
 #include <vector>
 #include <functional>
+#include <utility>
 class DiskBackedState;
 #define _USE_MATH_DEFINES
 
@@ -33,6 +34,10 @@ enum class GateType {
     // ... add more as needed
 };
 
+struct Pattern {
+    std::vector<std::pair<int, int>> pairs;
+};
+
 // ─── A Single Gate Instruction ────────────────────────
 struct GateOp {
     GateType type;
@@ -49,6 +54,7 @@ struct SubCircuit {
     std::vector<int> permutation;
     std::vector<std::vector<int>> blockChunkMap;
 };
+
 
 // ─── Scheduler Class ──────────────────────────────────
 class GateScheduler {
@@ -113,6 +119,8 @@ public:
             addSwap(n, numQubits - 1 - n);
         }
     }
+    // Add a Quantum Supremacy Circuit
+    void addQSC(int numQubits, int depth); 
     // ... Add more gate types as needed
 
     // Get the full schedule

@@ -2,12 +2,14 @@
 #include "quest/include/qureg.h"
 #include "quest/include/initialisations.h"
 #include "quest/include/hook.h"
+#include "quest/include/types.h"
 #include <filesystem>
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
 #include <random>
 #include <omp.h>
+#include "quest/src/core/randomiser.hpp"
 
 DiskBackedState::DiskBackedState(int numQubits_, int numBlocks_, int chunksPerBlock_,
                                  const std::vector<std::string>& diskRoots_)
@@ -187,7 +189,7 @@ void DiskBackedState::diskBacked_initRandomPureState() {
     }
 }
 
-double DiskBackedState::diskBacked_calcTotalProbability() const {
+qreal DiskBackedState::diskBacked_calcTotalProbability() const {
     qreal total = 0.0;
     
     for (size_t i = 0; i < numChunks; ++i) {
@@ -202,4 +204,126 @@ double DiskBackedState::diskBacked_calcTotalProbability() const {
     }
 
     return total;
+}
+
+int DiskBackedState::diskBacked_applyQubitMeasurement(int qubit) {
+    std::vector<qreal> probs(2, 0.0);
+    std::cout << "Applying measurement to qubit " << qubit << std::endl;
+    if (qubit <= numQubitsPerChunk) {
+        // Qubit is within chunk size - simple case
+        for (size_t i = 0; i < numChunks; ++i) {
+            std::cout << "Loading chunk " << i << std::endl;
+            std::vector<qcomp> buffer;
+            loadChunk(i, buffer);
+            std::cout << "Creating temp qureg" << std::endl;
+            Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
+            std::cout << "Temp qureg created with " << tempQureg.numAmps << " amplitudes" << std::endl;
+            std::cout << "First amplitude: " << tempQureg.cpuAmps[0] << std::endl;
+            std::cout << "Calculating probabilities" << std::endl;
+            probs[0] += calcProbOfQubitOutcome(tempQureg, qubit, 0);
+            probs[1] += calcProbOfQubitOutcome(tempQureg, qubit, 1);
+            std::cout << "Probabilities: " << probs[0] << " " << probs[1] << std::endl;
+            std::cout << "About to destroy qureg for chunk " << i << std::endl;
+            std::cout << "Qureg details before destroy - numAmps: " << tempQureg.numAmps << ", numQubits: " << tempQureg.numQubits << std::endl;
+            std::cout << "About to call destroyQureg..." << std::endl;
+            // Commenting out destroyQureg call as it seems to be causing issues
+            // try {
+            //     destroyQureg(tempQureg);
+            //     std::cout << "destroyQureg completed successfully" << std::endl;
+            // } catch (const std::exception& e) {
+            //     std::cout << "Exception in destroyQureg: " << e.what() << std::endl;
+            //     throw;
+            // } catch (...) {
+            //     std::cout << "Unknown exception in destroyQureg" << std::endl;
+            //     throw;
+            // }
+            std::cout << "Skipped destroyQureg call" << std::endl;
+            std::cout << "After try-catch block" << std::endl;
+            std::cout << "Chunk " << i << " processed" << std::endl;
+        }
+    } else {
+        // Qubit is outside chunk size - need to handle chunk mapping and regions
+        const auto& chunkMap = permTracker.getCurrentChunkMap();
+        int qubitOffset = qubit - numQubitsPerChunk - 1;
+        int regionSize = 1 << qubitOffset; // 2^(qubit - qubitsPerChunk - 1)
+        
+        for (size_t logicalChunk = 0; logicalChunk < numChunks; ++logicalChunk) {
+            size_t physicalChunk = chunkMap[logicalChunk];
+            std::vector<qcomp> buffer;
+            loadChunk(physicalChunk, buffer);
+            Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
+            
+            // Determine which region this chunk belongs to
+            int region = logicalChunk / regionSize;
+            int outcome = region % 2; // 0 or 1 based on region
+            
+            // Calculate probability for this chunk
+            qreal chunkProb = calcTotalProb(tempQureg);
+            probs[outcome] += chunkProb;
+            
+            // Commenting out destroyQureg call as it seems to be causing issues
+            // destroyQureg(tempQureg);
+        }
+    }
+    std::cout << "Probs: " << probs[0] << " " << probs[1] << std::endl;
+    // Determine measurement outcome
+    int outcome = rand_getRandomSingleQubitOutcome(probs[0]);
+    std::cout << "Outcome: " << outcome << std::endl;
+    // Renormalize based on outcome
+    qreal correctProb = probs[outcome];
+    qreal wrongProb = probs[1 - outcome];
+    qreal normalizationFactor = 1.0 / std::sqrt(correctProb);
+    std::cout << "Normalization factor: " << normalizationFactor << std::endl;
+    // Apply renormalization to all chunks
+    std::cout << "Applying renormalization to all chunks" << std::endl;
+    for (size_t logicalChunk = 0; logicalChunk < numChunks; ++logicalChunk) {
+        size_t physicalChunk = permTracker.getCurrentChunkMap()[logicalChunk];
+        std::vector<qcomp> buffer;
+        loadChunk(physicalChunk, buffer);
+        
+        if (qubit <= numQubitsPerChunk) {
+            // For qubits within chunk size, check each amplitude
+            for (size_t i = 0; i < buffer.size(); ++i) {
+                // Check if this amplitude corresponds to the wrong outcome
+                bool isWrongOutcome = false;
+                if (outcome == 0) {
+                    // Check if amplitude corresponds to qubit=1
+                    if ((i >> qubit) & 1) {
+                        isWrongOutcome = true;
+                    }
+                } else {
+                    // Check if amplitude corresponds to qubit=0
+                    if (!((i >> qubit) & 1)) {
+                        isWrongOutcome = true;
+                    }
+                }
+                
+                if (isWrongOutcome) {
+                    buffer[i] = 0.0; // Zero out wrong amplitudes
+                } else {
+                    buffer[i] *= normalizationFactor; // Renormalize correct amplitudes
+                }
+            }
+        } else {
+            // For qubits outside chunk size, check region
+            int qubitOffset = qubit - numQubitsPerChunk - 1;
+            int regionSize = 1 << qubitOffset;
+            int region = logicalChunk / regionSize;
+            int chunkOutcome = region % 2;
+            
+            if (chunkOutcome != outcome) {
+                // Zero out entire chunk if it corresponds to wrong outcome
+                std::fill(buffer.begin(), buffer.end(), 0.0);
+            } else {
+                // Renormalize entire chunk if it corresponds to correct outcome
+                for (auto& amp : buffer) {
+                    amp *= normalizationFactor;
+                }
+            }
+        }
+        
+        saveChunk(physicalChunk, buffer);
+    }
+    std::cout << "Measurement complete" << std::endl;
+    return outcome;
 }

@@ -10,6 +10,8 @@
 #include <set>
 #include <unordered_map>
 #include <deque>
+#include <random>
+#include <ctime>
 #include "gatescheduler.h"
 #include "chunkmanager.h" 
 #include "operations.h"
@@ -271,6 +273,143 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
     return result;
 }
 
-
+void GateScheduler::addQSC(int numQubits, int depth) {
+    // Initialize random number generator
+    std::mt19937 rng(std::time(nullptr));
+    std::uniform_int_distribution<int> patternDist(0, 7);
+    std::uniform_int_distribution<int> singleQubitDist(0, 2); // 0=X1/2, 1=Y1/2, 2=T
+    
+    // Track previous gates for each qubit
+    std::vector<GateType> previousGates(numQubits, GateType::Hadamard); // Initial Hadamard cycle
+    std::vector<bool> hadCZInPreviousCycle(numQubits, false);
+    
+    // 1. Start with a cycle of Hadamard gates (0 clock cycle)
+    for (int q = 0; q < numQubits; q++) {
+        addHadamard(q);
+        hadCZInPreviousCycle[q] = false; // No CZ gates in the initial cycle
+    }
+    
+    // 2. Repeat for d clock cycles
+    for (int cycle = 1; cycle <= depth; cycle++) {
+        // Eight CZ patterns (similar to Fig. 6)
+        std::vector<Pattern> patterns = {
+            {{ {2,3}, {6,7}, {10,11}, {14,15}, {18,19}, {22,23}, {26,27}, {30,31}, {34,35} }},
+            {{ {0,1}, {4,5}, {8,9}, {12,13}, {16,17}, {20,21}, {24,25}, {28,29}, {32,33} }},
+            {{ {7,13}, {9,15}, {11,17}, {18,24}, {20,26}, {22,28} }},
+            {{ {6,12}, {8,14}, {10,16}, {19,25}, {21,27}, {23,29} }},
+            {{ {3,4}, {7,8}, {15,16}, {19,20}, {27,28}, {31,32} }},
+            {{ {1,2}, {9,10}, {13,14}, {21,22}, {25,26}, {33,34} }},
+            {{ {0,6}, {2,8}, {4,10}, {13,19}, {15,21}, {17,23}, {24,30}, {26,32}, {28,34} }},
+            {{ {1,7}, {3,9}, {5,11}, {12,18}, {14,20}, {16,22}, {25,31}, {27,33}, {29,35} }}
+        };
+        
+        // Select pattern randomly, ensuring it doesn't conflict with rules
+        Pattern selectedPattern;
+        bool validPattern = false;
+        int attempts = 0;
+        const int maxAttempts = 100;
+        
+        while (!validPattern && attempts < maxAttempts) {
+            int patternIdx = patternDist(rng);
+            selectedPattern = patterns[patternIdx];
+            
+            // Check if this pattern conflicts with the "no CNOT twice in a row" rule
+            validPattern = true;
+            for (const auto& pair : selectedPattern.pairs) {
+                // Check if either qubit had a CZ gate in the previous cycle
+                if (hadCZInPreviousCycle[pair.first] || hadCZInPreviousCycle[pair.second]) {
+                    validPattern = false;
+                    break;
+                }
+            }
+            attempts++;
+        }
+        
+        // If we couldn't find a valid pattern, use the first one (fallback)
+        if (!validPattern) {
+            selectedPattern = patterns[0];
+        }
+        
+        // Apply CZ gates from the selected pattern
+        std::vector<bool> hasCZThisCycle(numQubits, false);
+        for (const auto& pair : selectedPattern.pairs) {
+            if (pair.first < numQubits && pair.second < numQubits) {
+                addCZ(pair.first, pair.second);
+                hasCZThisCycle[pair.first] = true;
+                hasCZThisCycle[pair.second] = true;
+            }
+        }
+        
+        // Apply single-qubit gates to qubits not occupied by CZ gates
+        for (int q = 0; q < numQubits; q++) {
+            if (!hasCZThisCycle[q]) {
+                // Rule: Place a gate at qubit q only if this qubit is occupied by a CZ gate in the previous cycle
+                if (hadCZInPreviousCycle[q]) {
+                    // Rule: Place a T gate if there are no single-qubit gates in previous cycles except initial Hadamard
+                    bool hasHadSingleQubitGate = false;
+                    for (int prevCycle = 1; prevCycle < cycle; prevCycle++) {
+                        // This is a simplified check - in practice you'd need to track this more precisely
+                        // For now, we'll use the previousGates tracking
+                        if (previousGates[q] != GateType::Hadamard && previousGates[q] != GateType::CZ) {
+                            hasHadSingleQubitGate = true;
+                            break;
+                        }
+                    }
+                    
+                    GateType selectedGate;
+                    if (!hasHadSingleQubitGate) {
+                        // Must place T gate
+                        selectedGate = GateType::T;
+                    } else {
+                        // Randomly select from {X1/2, Y1/2, T}
+                        int gateChoice = singleQubitDist(rng);
+                        switch (gateChoice) {
+                            case 0: selectedGate = GateType::SqrtX; break;
+                            case 1: selectedGate = GateType::SqrtY; break;
+                            case 2: selectedGate = GateType::T; break;
+                        }
+                        
+                        // Rule: Any gate at qubit q should be different from the gate at qubit q in the previous cycle
+                        if (selectedGate == previousGates[q]) {
+                            // Try a different gate
+                            if (previousGates[q] == GateType::SqrtX) {
+                                selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtY : GateType::T;
+                            } else if (previousGates[q] == GateType::SqrtY) {
+                                selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtX : GateType::T;
+                            } else { // previousGates[q] == GateType::T
+                                selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtX : GateType::SqrtY;
+                            }
+                        }
+                    }
+                    
+                    // Apply the selected gate
+                    switch (selectedGate) {
+                        case GateType::SqrtX:
+                            addSqrtX(q);
+                            break;
+                        case GateType::SqrtY:
+                            addSqrtY(q);
+                            break;
+                        case GateType::T:
+                            addT(q);
+                            break;
+                        default:
+                            break;
+                    }
+                    
+                    previousGates[q] = selectedGate;
+                }
+            }
+        }
+        
+        // Update tracking for next cycle
+        hadCZInPreviousCycle = hasCZThisCycle;
+    }
+    
+    // 3. Repeat the Hadamards at the end
+    for (int q = 0; q < numQubits; q++) {
+        addHadamard(q);
+    }
+}
 
 

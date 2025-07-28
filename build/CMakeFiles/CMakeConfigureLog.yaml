@@ -24,7 +24,7 @@ events:
       The output was:
       0
       MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-      Build started 24/07/2025 17:22:58.
+      Build started 28/07/2025 19:37:58.
       
       Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\4.0.2\\CompilerIdCXX\\CompilerIdCXX.vcxproj" on node 1 (default targets).
       PrepareForBuild:
@@ -53,7 +53,7 @@ events:
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:00.77
+      Time Elapsed 00:00:00.90
       
       
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -79,7 +79,7 @@ events:
       The output was:
       0
       MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-      Build started 24/07/2025 17:22:59.
+      Build started 28/07/2025 19:38:00.
       
       Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\4.0.2\\CompilerIdC\\CompilerIdC.vcxproj" on node 1 (default targets).
       PrepareForBuild:
@@ -108,7 +108,7 @@ events:
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:00.52
+      Time Elapsed 00:00:00.48
       
       
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -127,8 +127,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-e21ww5"
-      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-e21ww5"
+      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-83neg5"
+      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-83neg5"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -138,40 +138,40 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-e21ww5'
+        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-83neg5'
         
-        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_29e63.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_3f869.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-        Build started 24/07/2025 17:23:01.
+        Build started 28/07/2025 19:38:01.
         
-        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-e21ww5\\cmTC_29e63.vcxproj" on node 1 (default targets).
+        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-83neg5\\cmTC_3f869.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_29e63.dir\\Debug\\".
+          Creating directory "cmTC_3f869.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-e21ww5\\Debug\\".
-          Creating directory "cmTC_29e63.dir\\Debug\\cmTC_29e63.tlog\\".
+          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-83neg5\\Debug\\".
+          Creating directory "cmTC_3f869.dir\\Debug\\cmTC_3f869.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_29e63.dir\\Debug\\cmTC_29e63.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_29e63.dir\\Debug\\cmTC_29e63.tlog\\unsuccessfulbuild".
+          Creating "cmTC_3f869.dir\\Debug\\cmTC_3f869.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_3f869.dir\\Debug\\cmTC_3f869.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_29e63.dir\\Debug\\\\" /Fd"cmTC_29e63.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCXXCompilerABI.cpp"
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_3f869.dir\\Debug\\\\" /Fd"cmTC_3f869.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCXXCompilerABI.cpp"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35207.1 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_29e63.dir\\Debug\\\\" /Fd"cmTC_29e63.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCXXCompilerABI.cpp"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_3f869.dir\\Debug\\\\" /Fd"cmTC_3f869.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCXXCompilerABI.cpp"
           CMakeCXXCompilerABI.cpp
         Link:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-e21ww5\\Debug\\cmTC_29e63.exe" /INCREMENTAL /ILK:"cmTC_29e63.dir\\Debug\\cmTC_29e63.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-e21ww5/Debug/cmTC_29e63.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-e21ww5/Debug/cmTC_29e63.lib" /MACHINE:X64  /machine:x64 cmTC_29e63.dir\\Debug\\CMakeCXXCompilerABI.obj
-          cmTC_29e63.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-e21ww5\\Debug\\cmTC_29e63.exe
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-83neg5\\Debug\\cmTC_3f869.exe" /INCREMENTAL /ILK:"cmTC_3f869.dir\\Debug\\cmTC_3f869.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-83neg5/Debug/cmTC_3f869.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-83neg5/Debug/cmTC_3f869.lib" /MACHINE:X64  /machine:x64 cmTC_3f869.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_3f869.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-83neg5\\Debug\\cmTC_3f869.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_29e63.dir\\Debug\\cmTC_29e63.tlog\\unsuccessfulbuild".
-          Touching "cmTC_29e63.dir\\Debug\\cmTC_29e63.tlog\\cmTC_29e63.lastbuildstate".
-        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-e21ww5\\cmTC_29e63.vcxproj" (default targets).
+          Deleting file "cmTC_3f869.dir\\Debug\\cmTC_3f869.tlog\\unsuccessfulbuild".
+          Touching "cmTC_3f869.dir\\Debug\\cmTC_3f869.tlog\\cmTC_3f869.lastbuildstate".
+        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-83neg5\\cmTC_3f869.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
             0 Error(s)
         
-        Time Elapsed 00:00:00.49
+        Time Elapsed 00:00:00.46
         
       exitCode: 0
   -
@@ -211,8 +211,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-xnfow4"
-      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-xnfow4"
+      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-hjmoem"
+      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-hjmoem"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
       CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -221,34 +221,34 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-xnfow4'
+        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-hjmoem'
         
-        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_ba59f.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_b45e0.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-        Build started 24/07/2025 17:23:02.
+        Build started 28/07/2025 19:38:03.
         
-        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xnfow4\\cmTC_ba59f.vcxproj" on node 1 (default targets).
+        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hjmoem\\cmTC_b45e0.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_ba59f.dir\\Debug\\".
+          Creating directory "cmTC_b45e0.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xnfow4\\Debug\\".
-          Creating directory "cmTC_ba59f.dir\\Debug\\cmTC_ba59f.tlog\\".
+          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hjmoem\\Debug\\".
+          Creating directory "cmTC_b45e0.dir\\Debug\\cmTC_b45e0.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_ba59f.dir\\Debug\\cmTC_ba59f.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_ba59f.dir\\Debug\\cmTC_ba59f.tlog\\unsuccessfulbuild".
+          Creating "cmTC_b45e0.dir\\Debug\\cmTC_b45e0.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_b45e0.dir\\Debug\\cmTC_b45e0.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_ba59f.dir\\Debug\\\\" /Fd"cmTC_ba59f.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCCompilerABI.c"
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_b45e0.dir\\Debug\\\\" /Fd"cmTC_b45e0.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCCompilerABI.c"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35207.1 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_ba59f.dir\\Debug\\\\" /Fd"cmTC_ba59f.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCCompilerABI.c"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_b45e0.dir\\Debug\\\\" /Fd"cmTC_b45e0.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.0\\Modules\\CMakeCCompilerABI.c"
           CMakeCCompilerABI.c
         Link:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xnfow4\\Debug\\cmTC_ba59f.exe" /INCREMENTAL /ILK:"cmTC_ba59f.dir\\Debug\\cmTC_ba59f.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-xnfow4/Debug/cmTC_ba59f.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-xnfow4/Debug/cmTC_ba59f.lib" /MACHINE:X64  /machine:x64 cmTC_ba59f.dir\\Debug\\CMakeCCompilerABI.obj
-          cmTC_ba59f.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xnfow4\\Debug\\cmTC_ba59f.exe
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hjmoem\\Debug\\cmTC_b45e0.exe" /INCREMENTAL /ILK:"cmTC_b45e0.dir\\Debug\\cmTC_b45e0.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-hjmoem/Debug/cmTC_b45e0.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-hjmoem/Debug/cmTC_b45e0.lib" /MACHINE:X64  /machine:x64 cmTC_b45e0.dir\\Debug\\CMakeCCompilerABI.obj
+          cmTC_b45e0.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hjmoem\\Debug\\cmTC_b45e0.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_ba59f.dir\\Debug\\cmTC_ba59f.tlog\\unsuccessfulbuild".
-          Touching "cmTC_ba59f.dir\\Debug\\cmTC_ba59f.tlog\\cmTC_ba59f.lastbuildstate".
-        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-xnfow4\\cmTC_ba59f.vcxproj" (default targets).
+          Deleting file "cmTC_b45e0.dir\\Debug\\cmTC_b45e0.tlog\\unsuccessfulbuild".
+          Touching "cmTC_b45e0.dir\\Debug\\cmTC_b45e0.tlog\\cmTC_b45e0.lastbuildstate".
+        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hjmoem\\cmTC_b45e0.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
@@ -293,8 +293,8 @@ events:
       - "CMakeLists.txt:322 (find_package)"
     description: "Detecting C OpenMP compiler info"
     directories:
-      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-ydcuwo"
-      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-ydcuwo"
+      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-2iaa2b"
+      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-2iaa2b"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
       CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -304,89 +304,34 @@ events:
       variable: "OpenMP_COMPILE_RESULT_C_openmp"
       cached: true
       stdout: |
-        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-ydcuwo'
+        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-2iaa2b'
         
-        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_c78db.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_e5ac2.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-        Build started 24/07/2025 17:23:02.
+        Build started 28/07/2025 19:38:04.
         
-        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ydcuwo\\cmTC_c78db.vcxproj" on node 1 (default targets).
+        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2iaa2b\\cmTC_e5ac2.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_c78db.dir\\Debug\\".
+          Creating directory "cmTC_e5ac2.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ydcuwo\\Debug\\".
-          Creating directory "cmTC_c78db.dir\\Debug\\cmTC_c78db.tlog\\".
+          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2iaa2b\\Debug\\".
+          Creating directory "cmTC_e5ac2.dir\\Debug\\cmTC_e5ac2.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_c78db.dir\\Debug\\cmTC_c78db.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_c78db.dir\\Debug\\cmTC_c78db.tlog\\unsuccessfulbuild".
+          Creating "cmTC_e5ac2.dir\\Debug\\cmTC_e5ac2.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_e5ac2.dir\\Debug\\cmTC_e5ac2.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_c78db.dir\\Debug\\\\" /Fd"cmTC_c78db.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ydcuwo\\OpenMPTryFlag.c"
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_e5ac2.dir\\Debug\\\\" /Fd"cmTC_e5ac2.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2iaa2b\\OpenMPTryFlag.c"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35207.1 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_c78db.dir\\Debug\\\\" /Fd"cmTC_c78db.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ydcuwo\\OpenMPTryFlag.c"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_e5ac2.dir\\Debug\\\\" /Fd"cmTC_e5ac2.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2iaa2b\\OpenMPTryFlag.c"
           OpenMPTryFlag.c
         Link:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ydcuwo\\Debug\\cmTC_c78db.exe" /INCREMENTAL /ILK:"cmTC_c78db.dir\\Debug\\cmTC_c78db.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-ydcuwo/Debug/cmTC_c78db.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-ydcuwo/Debug/cmTC_c78db.lib" /MACHINE:X64  /machine:x64 cmTC_c78db.dir\\Debug\\OpenMPTryFlag.obj
-          cmTC_c78db.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ydcuwo\\Debug\\cmTC_c78db.exe
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2iaa2b\\Debug\\cmTC_e5ac2.exe" /INCREMENTAL /ILK:"cmTC_e5ac2.dir\\Debug\\cmTC_e5ac2.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-2iaa2b/Debug/cmTC_e5ac2.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-2iaa2b/Debug/cmTC_e5ac2.lib" /MACHINE:X64  /machine:x64 cmTC_e5ac2.dir\\Debug\\OpenMPTryFlag.obj
+          cmTC_e5ac2.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2iaa2b\\Debug\\cmTC_e5ac2.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_c78db.dir\\Debug\\cmTC_c78db.tlog\\unsuccessfulbuild".
-          Touching "cmTC_c78db.dir\\Debug\\cmTC_c78db.tlog\\cmTC_c78db.lastbuildstate".
-        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ydcuwo\\cmTC_c78db.vcxproj" (default targets).
-        
-        Build succeeded.
-            0 Warning(s)
-            0 Error(s)
-        
-        Time Elapsed 00:00:00.47
-        
-      exitCode: 0
-  -
-    kind: "try_compile-v1"
-    backtrace:
-      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:250 (try_compile)"
-      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:557 (_OPENMP_GET_FLAGS)"
-      - "CMakeLists.txt:322 (find_package)"
-    description: "Detecting CXX OpenMP compiler info"
-    directories:
-      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsh4z3"
-      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsh4z3"
-    cmakeVariables:
-      CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
-      CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
-      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      CMAKE_MODULE_PATH: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/cmake"
-    buildResult:
-      variable: "OpenMP_COMPILE_RESULT_CXX_openmp"
-      cached: true
-      stdout: |
-        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsh4z3'
-        
-        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_ce1f5.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
-        MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-        Build started 24/07/2025 17:23:03.
-        
-        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsh4z3\\cmTC_ce1f5.vcxproj" on node 1 (default targets).
-        PrepareForBuild:
-          Creating directory "cmTC_ce1f5.dir\\Debug\\".
-          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsh4z3\\Debug\\".
-          Creating directory "cmTC_ce1f5.dir\\Debug\\cmTC_ce1f5.tlog\\".
-        InitializeBuildStatus:
-          Creating "cmTC_ce1f5.dir\\Debug\\cmTC_ce1f5.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_ce1f5.dir\\Debug\\cmTC_ce1f5.tlog\\unsuccessfulbuild".
-        ClCompile:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_ce1f5.dir\\Debug\\\\" /Fd"cmTC_ce1f5.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsh4z3\\OpenMPTryFlag.cpp"
-          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35207.1 for x64
-          Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_ce1f5.dir\\Debug\\\\" /Fd"cmTC_ce1f5.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsh4z3\\OpenMPTryFlag.cpp"
-          OpenMPTryFlag.cpp
-        Link:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsh4z3\\Debug\\cmTC_ce1f5.exe" /INCREMENTAL /ILK:"cmTC_ce1f5.dir\\Debug\\cmTC_ce1f5.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsh4z3/Debug/cmTC_ce1f5.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsh4z3/Debug/cmTC_ce1f5.lib" /MACHINE:X64  /machine:x64 cmTC_ce1f5.dir\\Debug\\OpenMPTryFlag.obj
-          cmTC_ce1f5.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsh4z3\\Debug\\cmTC_ce1f5.exe
-        FinalizeBuildStatus:
-          Deleting file "cmTC_ce1f5.dir\\Debug\\cmTC_ce1f5.tlog\\unsuccessfulbuild".
-          Touching "cmTC_ce1f5.dir\\Debug\\cmTC_ce1f5.tlog\\cmTC_ce1f5.lastbuildstate".
-        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsh4z3\\cmTC_ce1f5.vcxproj" (default targets).
+          Deleting file "cmTC_e5ac2.dir\\Debug\\cmTC_e5ac2.tlog\\unsuccessfulbuild".
+          Touching "cmTC_e5ac2.dir\\Debug\\cmTC_e5ac2.tlog\\cmTC_e5ac2.lastbuildstate".
+        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-2iaa2b\\cmTC_e5ac2.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
@@ -398,50 +343,50 @@ events:
   -
     kind: "try_compile-v1"
     backtrace:
-      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:491 (try_compile)"
-      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:631 (_OPENMP_GET_SPEC_DATE)"
+      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:250 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:557 (_OPENMP_GET_FLAGS)"
       - "CMakeLists.txt:322 (find_package)"
-    description: "Detecting C OpenMP version"
+    description: "Detecting CXX OpenMP compiler info"
     directories:
-      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-gfjiq1"
-      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-gfjiq1"
+      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsdkn7"
+      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsdkn7"
     cmakeVariables:
-      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
-      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
+      CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
       CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
       CMAKE_MODULE_PATH: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/cmake"
     buildResult:
-      variable: "OpenMP_SPECTEST_C_"
+      variable: "OpenMP_COMPILE_RESULT_CXX_openmp"
       cached: true
       stdout: |
-        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-gfjiq1'
+        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsdkn7'
         
-        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_d439f.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_3e152.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-        Build started 24/07/2025 17:23:04.
+        Build started 28/07/2025 19:38:05.
         
-        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gfjiq1\\cmTC_d439f.vcxproj" on node 1 (default targets).
+        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsdkn7\\cmTC_3e152.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_d439f.dir\\Debug\\".
+          Creating directory "cmTC_3e152.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gfjiq1\\Debug\\".
-          Creating directory "cmTC_d439f.dir\\Debug\\cmTC_d439f.tlog\\".
+          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsdkn7\\Debug\\".
+          Creating directory "cmTC_3e152.dir\\Debug\\cmTC_3e152.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_d439f.dir\\Debug\\cmTC_d439f.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_d439f.dir\\Debug\\cmTC_d439f.tlog\\unsuccessfulbuild".
+          Creating "cmTC_3e152.dir\\Debug\\cmTC_3e152.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_3e152.dir\\Debug\\cmTC_3e152.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_d439f.dir\\Debug\\\\" /Fd"cmTC_d439f.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gfjiq1\\OpenMPCheckVersion.c"
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_3e152.dir\\Debug\\\\" /Fd"cmTC_3e152.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsdkn7\\OpenMPTryFlag.cpp"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35207.1 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_d439f.dir\\Debug\\\\" /Fd"cmTC_d439f.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gfjiq1\\OpenMPCheckVersion.c"
-          OpenMPCheckVersion.c
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_3e152.dir\\Debug\\\\" /Fd"cmTC_3e152.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsdkn7\\OpenMPTryFlag.cpp"
+          OpenMPTryFlag.cpp
         Link:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gfjiq1\\Debug\\cmTC_d439f.exe" /INCREMENTAL /ILK:"cmTC_d439f.dir\\Debug\\cmTC_d439f.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-gfjiq1/Debug/cmTC_d439f.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-gfjiq1/Debug/cmTC_d439f.lib" /MACHINE:X64  /machine:x64 cmTC_d439f.dir\\Debug\\OpenMPCheckVersion.obj
-          cmTC_d439f.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gfjiq1\\Debug\\cmTC_d439f.exe
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsdkn7\\Debug\\cmTC_3e152.exe" /INCREMENTAL /ILK:"cmTC_3e152.dir\\Debug\\cmTC_3e152.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsdkn7/Debug/cmTC_3e152.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-dsdkn7/Debug/cmTC_3e152.lib" /MACHINE:X64  /machine:x64 cmTC_3e152.dir\\Debug\\OpenMPTryFlag.obj
+          cmTC_3e152.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsdkn7\\Debug\\cmTC_3e152.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_d439f.dir\\Debug\\cmTC_d439f.tlog\\unsuccessfulbuild".
-          Touching "cmTC_d439f.dir\\Debug\\cmTC_d439f.tlog\\cmTC_d439f.lastbuildstate".
-        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-gfjiq1\\cmTC_d439f.vcxproj" (default targets).
+          Deleting file "cmTC_3e152.dir\\Debug\\cmTC_3e152.tlog\\unsuccessfulbuild".
+          Touching "cmTC_3e152.dir\\Debug\\cmTC_3e152.tlog\\cmTC_3e152.lastbuildstate".
+        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-dsdkn7\\cmTC_3e152.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
@@ -456,10 +401,65 @@ events:
       - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:491 (try_compile)"
       - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:631 (_OPENMP_GET_SPEC_DATE)"
       - "CMakeLists.txt:322 (find_package)"
+    description: "Detecting C OpenMP version"
+    directories:
+      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-cu8og3"
+      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-cu8og3"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/cmake"
+    buildResult:
+      variable: "OpenMP_SPECTEST_C_"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-cu8og3'
+        
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_0c7cb.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
+        Build started 28/07/2025 19:38:06.
+        
+        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-cu8og3\\cmTC_0c7cb.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Creating directory "cmTC_0c7cb.dir\\Debug\\".
+          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-cu8og3\\Debug\\".
+          Creating directory "cmTC_0c7cb.dir\\Debug\\cmTC_0c7cb.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_0c7cb.dir\\Debug\\cmTC_0c7cb.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_0c7cb.dir\\Debug\\cmTC_0c7cb.tlog\\unsuccessfulbuild".
+        ClCompile:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_0c7cb.dir\\Debug\\\\" /Fd"cmTC_0c7cb.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-cu8og3\\OpenMPCheckVersion.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35207.1 for x64
+          Copyright (C) Microsoft Corporation.  All rights reserved.
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_0c7cb.dir\\Debug\\\\" /Fd"cmTC_0c7cb.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-cu8og3\\OpenMPCheckVersion.c"
+          OpenMPCheckVersion.c
+        Link:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-cu8og3\\Debug\\cmTC_0c7cb.exe" /INCREMENTAL /ILK:"cmTC_0c7cb.dir\\Debug\\cmTC_0c7cb.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-cu8og3/Debug/cmTC_0c7cb.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-cu8og3/Debug/cmTC_0c7cb.lib" /MACHINE:X64  /machine:x64 cmTC_0c7cb.dir\\Debug\\OpenMPCheckVersion.obj
+          cmTC_0c7cb.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-cu8og3\\Debug\\cmTC_0c7cb.exe
+        FinalizeBuildStatus:
+          Deleting file "cmTC_0c7cb.dir\\Debug\\cmTC_0c7cb.tlog\\unsuccessfulbuild".
+          Touching "cmTC_0c7cb.dir\\Debug\\cmTC_0c7cb.tlog\\cmTC_0c7cb.lastbuildstate".
+        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-cu8og3\\cmTC_0c7cb.vcxproj" (default targets).
+        
+        Build succeeded.
+            0 Warning(s)
+            0 Error(s)
+        
+        Time Elapsed 00:00:00.46
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:491 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-4.0/Modules/FindOpenMP.cmake:631 (_OPENMP_GET_SPEC_DATE)"
+      - "CMakeLists.txt:322 (find_package)"
     description: "Detecting CXX OpenMP version"
     directories:
-      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-jrrbre"
-      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-jrrbre"
+      source: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-tlq360"
+      binary: "C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-tlq360"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -469,40 +469,40 @@ events:
       variable: "OpenMP_SPECTEST_CXX_"
       cached: true
       stdout: |
-        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-jrrbre'
+        Change Dir: 'C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-tlq360'
         
-        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_ea0f7.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_fe7c4.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.14.8+a7a4d5af0 for .NET Framework
-        Build started 24/07/2025 17:23:05.
+        Build started 28/07/2025 19:38:07.
         
-        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jrrbre\\cmTC_ea0f7.vcxproj" on node 1 (default targets).
+        Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tlq360\\cmTC_fe7c4.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_ea0f7.dir\\Debug\\".
+          Creating directory "cmTC_fe7c4.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jrrbre\\Debug\\".
-          Creating directory "cmTC_ea0f7.dir\\Debug\\cmTC_ea0f7.tlog\\".
+          Creating directory "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tlq360\\Debug\\".
+          Creating directory "cmTC_fe7c4.dir\\Debug\\cmTC_fe7c4.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_ea0f7.dir\\Debug\\cmTC_ea0f7.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_ea0f7.dir\\Debug\\cmTC_ea0f7.tlog\\unsuccessfulbuild".
+          Creating "cmTC_fe7c4.dir\\Debug\\cmTC_fe7c4.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_fe7c4.dir\\Debug\\cmTC_fe7c4.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_ea0f7.dir\\Debug\\\\" /Fd"cmTC_ea0f7.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jrrbre\\OpenMPCheckVersion.cpp"
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_fe7c4.dir\\Debug\\\\" /Fd"cmTC_fe7c4.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tlq360\\OpenMPCheckVersion.cpp"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35207.1 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_ea0f7.dir\\Debug\\\\" /Fd"cmTC_ea0f7.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jrrbre\\OpenMPCheckVersion.cpp"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /openmp /Fo"cmTC_fe7c4.dir\\Debug\\\\" /Fd"cmTC_fe7c4.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tlq360\\OpenMPCheckVersion.cpp"
           OpenMPCheckVersion.cpp
         Link:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jrrbre\\Debug\\cmTC_ea0f7.exe" /INCREMENTAL /ILK:"cmTC_ea0f7.dir\\Debug\\cmTC_ea0f7.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-jrrbre/Debug/cmTC_ea0f7.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-jrrbre/Debug/cmTC_ea0f7.lib" /MACHINE:X64  /machine:x64 cmTC_ea0f7.dir\\Debug\\OpenMPCheckVersion.obj
-          cmTC_ea0f7.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jrrbre\\Debug\\cmTC_ea0f7.exe
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tlq360\\Debug\\cmTC_fe7c4.exe" /INCREMENTAL /ILK:"cmTC_fe7c4.dir\\Debug\\cmTC_fe7c4.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-tlq360/Debug/cmTC_fe7c4.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Edinburgh/Dissertation/Code/QuEST4.1/QuEST/build/CMakeFiles/CMakeScratch/TryCompile-tlq360/Debug/cmTC_fe7c4.lib" /MACHINE:X64  /machine:x64 cmTC_fe7c4.dir\\Debug\\OpenMPCheckVersion.obj
+          cmTC_fe7c4.vcxproj -> C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tlq360\\Debug\\cmTC_fe7c4.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_ea0f7.dir\\Debug\\cmTC_ea0f7.tlog\\unsuccessfulbuild".
-          Touching "cmTC_ea0f7.dir\\Debug\\cmTC_ea0f7.tlog\\cmTC_ea0f7.lastbuildstate".
-        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jrrbre\\cmTC_ea0f7.vcxproj" (default targets).
+          Deleting file "cmTC_fe7c4.dir\\Debug\\cmTC_fe7c4.tlog\\unsuccessfulbuild".
+          Touching "cmTC_fe7c4.dir\\Debug\\cmTC_fe7c4.tlog\\cmTC_fe7c4.lastbuildstate".
+        Done Building Project "C:\\Edinburgh\\Dissertation\\Code\\QuEST4.1\\QuEST\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tlq360\\cmTC_fe7c4.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
             0 Error(s)
         
-        Time Elapsed 00:00:00.50
+        Time Elapsed 00:00:00.48
         
       exitCode: 0
 ...

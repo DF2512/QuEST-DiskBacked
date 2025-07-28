@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <complex>
-#include <types.h>
+#include "types.h"
 #include "chunkmanager.h"
 #include "calculations.h"
 
@@ -28,7 +28,8 @@ public:
     void diskBacked_initRandomPureState();
     void deleteAllChunkFiles();
     double computeTotalProbability() const;
-    double diskBacked_calcTotalProbability() const;
+    qreal diskBacked_calcTotalProbability() const;
+    int diskBacked_applyQubitMeasurement(int qubit);
     ~DiskBackedState();
     PermutationTracker& getPermutationTracker(); 
 
