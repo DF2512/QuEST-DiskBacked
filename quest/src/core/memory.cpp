@@ -45,14 +45,14 @@
         maxLocalNumQubits /= 2; // floors
 
     
-    #ifdef USE_DISK_BACKED
+    //#ifdef USE_DISK_BACKED
         // given the point of the disk-backed feature is to exceed the memory limits, 
         // we must spoof the qubit limit to avoid errors resulting from large qubits exceeding the memory limits
-        int maxGlobalNumQubits = 99; 
-    #else
+        //int maxGlobalNumQubits = 99; 
+   // #else
         // doubling nodes permits 1 additional qubit
         int maxGlobalNumQubits = maxLocalNumQubits + logBase2(numNodes);
-    #endif
+    //#endif
 
     return maxGlobalNumQubits;
 }

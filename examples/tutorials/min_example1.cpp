@@ -1,3 +1,10 @@
+/** @file
+ * A minimum C++ example of running
+ * QuEST with disk-backed state management.
+ * 
+ * @author Tyson Jones
+*/
+
 #include "quest.h"
 #include "diskbackedstate.h"
 #include "gatescheduler.h"
@@ -15,7 +22,7 @@
 #include <numeric>
 #include <exception>
 #include <omp.h>
-#include <set> // Added for set comparison
+#include <set> 
 #include <limits>
 
 struct RunLog {
@@ -26,6 +33,10 @@ struct RunLog {
     bool anyChunkSwap;
     bool success;
     bool segfaultOrException;
+    // Measurement outcome info
+    int diskOutcome = -1;
+    int regOutcome = -1;
+    bool measurementMatch = false;
     // Restoration debug info
     int restorationSwap1Count = 0;
     int restorationSwap2Count = 0;
@@ -71,7 +82,7 @@ int main() {
     reportQuESTEnv();
 
     // === CONFIGURE NUMBER OF RUNS HERE ===
-    const int numRuns = 50; // <--- Change this value to set number of test runs
+    const int numRuns = 50; 
     int numSuccesses = 0;
     std::vector<RunLog> logs;
 
@@ -137,12 +148,147 @@ int main() {
         amps.clear();
         amps.shrink_to_fit();
 
-        // 4. Build QFT schedule for disk-backed state
+        // 4. Build a schedule applying each gate to all qubits exactly once, in random order
         GateScheduler scheduler;
-        scheduler.addFullQFT(numQubits);
+        std::vector<int> qubitOrder(numQubits);
+        std::iota(qubitOrder.begin(), qubitOrder.end(), 0);
+        std::mt19937 rng(static_cast<unsigned>(std::time(nullptr)) + run); // ensure different seed per run
+        std::shuffle(qubitOrder.begin(), qubitOrder.end(), rng);
+        // Uncomment ONE block below to test a single gate type at a time
+        
+        /**/
+        // --- Hadamard ---
+        for (int idx = 0; idx < numQubits; ++idx) {
+            int q = qubitOrder[idx];
+            scheduler.addHadamard(q);
+        }
+        
+        // --- Phase ---
+        for (int idx = 0; idx < numQubits; ++idx) {
+            int q = qubitOrder[idx];
+            scheduler.addPhase(q, M_PI/4.0); // or any fixed angle
+        }
+        
+        // --- S ---
+        for (int idx = 0; idx < numQubits; ++idx) {
+            int q = qubitOrder[idx];
+            scheduler.addS(q);
+        }
+        
+        // --- T ---
+        for (int idx = 0; idx < numQubits; ++idx) {
+            int q = qubitOrder[idx];
+            scheduler.addT(q);
+        }
+        
+        // --- SqrtX ---
+        for (int idx = 0; idx < numQubits; ++idx) {
+            int q = qubitOrder[idx];
+            scheduler.addSqrtX(q);
+        }
+        
+        // --- SqrtY ---
+        for (int idx = 0; idx < numQubits; ++idx) {
+            int q = qubitOrder[idx];
+            scheduler.addSqrtY(q);
+        }
+        
+        // --- CNOT ---
+        std::vector<int> cnotOrder(numQubits-1);
+        std::iota(cnotOrder.begin(), cnotOrder.end(), 0);
+        std::shuffle(cnotOrder.begin(), cnotOrder.end(), rng);
+        for (int idx = 0; idx < numQubits-1; ++idx) {
+            int q = cnotOrder[idx];
+            scheduler.addCNOT(q, q+1);
+        }
+        
+        // --- ControlledPhase ---
+        std::vector<int> cpOrder(numQubits-1);
+        std::iota(cpOrder.begin(), cpOrder.end(), 0);
+        std::shuffle(cpOrder.begin(), cpOrder.end(), rng);
+        for (int idx = 0; idx < numQubits-1; ++idx) {
+            int q = cpOrder[idx];
+            scheduler.addControlledPhase(q, q+1, M_PI/4.0);
+        }
+        
+        // --- CZ ---
+        std::vector<int> czOrder(numQubits-1);
+        std::iota(czOrder.begin(), czOrder.end(), 0);
+        std::shuffle(czOrder.begin(), czOrder.end(), rng);
+        for (int idx = 0; idx < numQubits-1; ++idx) {
+            int q = czOrder[idx];
+            scheduler.addCZ(q, q+1);
+        }
+        
+        // --- ControlledRK ---
+        std::vector<int> crkOrder(numQubits-1);
+        std::iota(crkOrder.begin(), crkOrder.end(), 0);
+        std::shuffle(crkOrder.begin(), crkOrder.end(), rng);
+        for (int idx = 0; idx < numQubits-1; ++idx) {
+            int q = crkOrder[idx];
+            scheduler.addControlledRK(q, q+1, 2);
+        }
+        
+        // --- Swap ---
+        std::vector<int> swapOrder(numQubits-1);
+        std::iota(swapOrder.begin(), swapOrder.end(), 0);
+        std::shuffle(swapOrder.begin(), swapOrder.end(), rng);
+        for (int idx = 0; idx < numQubits-1; ++idx) {
+            int q = swapOrder[idx];
+            scheduler.addSwap(q, q+1);
+        }
+        
+        // --- Quantum Supremacy Circuit ---
+        //scheduler.addQSC(numQubits, 8); // 3 cycles of quantum supremacy circuit
+        
+        // --- Full QFT ---
+        // scheduler.addFullQFT(numQubits);
 
-        // 5. Apply QFT to the regular Qureg using the original function
-        applyFullQuantumFourierTransform(qureg);
+        // 5. Apply the schedule to the regular Qureg using direct gate functions
+        const auto& schedule = scheduler.getSchedule();
+        for (const auto& op : schedule) {
+            switch (op.type) {
+                case GateType::Hadamard:
+                    applyHadamard(qureg, op.target);
+                    break;
+                case GateType::Phase:
+                    applyPhaseShift(qureg, op.target, op.angle);
+                    break;
+                case GateType::S:
+                    applyS(qureg, op.target);
+                    break;
+                case GateType::T:
+                    applyT(qureg, op.target);
+                    break;
+                case GateType::SqrtX:
+                    applyRotateX(qureg, op.target, op.angle);
+                    break;
+                case GateType::SqrtY:
+                    applyRotateY(qureg, op.target, op.angle);
+                    break;
+                case GateType::CNOT:
+                    applyControlledPauliX(qureg, op.control, op.target);
+                    break;
+                case GateType::ControlledPhase:
+                    applyTwoQubitPhaseShift(qureg, op.control, op.target, op.angle);
+                    break;
+                case GateType::CZ:
+                    applyControlledPauliZ(qureg, op.control, op.target);
+                    break;
+                case GateType::ControlledRK:
+                    applyTwoQubitPhaseShift(qureg, op.control, op.target, op.angle);
+                    break;
+                case GateType::Swap:
+                    applySwap(qureg, op.target, op.control);
+                    break;
+                default:
+                    std::cerr << "[Regular Qureg] Unknown gate type in schedule!\n";
+                    break;
+            }
+        }
+
+        // applyFullQuantumFourierTransform(qureg);
+
 
         // 6. Apply the schedule to the disk-backed state
         try {
@@ -185,7 +331,18 @@ int main() {
             std::cout << "[EXCEPTION] Unknown exception or segfault!" << std::endl;
             log.segfaultOrException = true;
         }
-
+        // Measure qubit 0
+        std::cout << "Measuring qubit 0 for disk-backed state" << std::endl;
+        int diskOutcome = diskState.diskBacked_applyQubitMeasurement(0);
+        std::cout << "Disk-backed state measurement outcome: " << diskOutcome << std::endl;
+        std::cout << "Measuring qubit 0 for regular Qureg" << std::endl;
+        int regOutcome = applyQubitMeasurement(qureg, 0);
+        std::cout << "Regular Qureg measurement outcome: " << regOutcome << std::endl;
+        // Store measurement outcomes in log
+        log.diskOutcome = diskOutcome;
+        log.regOutcome = regOutcome;
+        log.measurementMatch = (diskOutcome == regOutcome);
+        
         // 7. Extract amplitudes from both
         std::vector<qcomp> ampsRegular(qureg.numAmps);
         getQuregAmps(ampsRegular.data(), qureg, 0, qureg.numAmps);
@@ -287,7 +444,7 @@ int main() {
     std::cout << "Test summary: " << numSuccesses << " / " << numRuns << " runs succeeded.\n";
     std::cout << "====================\n";
     std::cout << "\nRun-by-run log:\n";
-    std::cout << "Idx | Subcircuits | Swap1 | Swap2 | ChunkSwap | Success | Exception | RSwap1 | RSwap2 | RArea | FailIdx | DiskQ | RegQ | AreaMismatch | BagsMatch\n";
+    std::cout << "Idx | Subcircuits | Swap1 | Swap2 | ChunkSwap | Success | Exception | RSwap1 | RSwap2 | RArea | FailIdx | DiskQ | RegQ | AreaMismatch | BagsMatch | DiskOut | RegOut | MeasMatch\n";
     for (const auto& log : logs) {
         std::cout << std::setw(3) << log.runIdx << " | "
                   << std::setw(11) << log.numSubcircuits << " | "
@@ -303,7 +460,10 @@ int main() {
                   << std::setw(5) << log.diskQubit << " | "
                   << std::setw(5) << log.regQubit << " | "
                   << std::setw(12) << log.totalAreaShuffleMismatches << " | "
-                  << std::setw(8) << (log.bagsMatch ? "Y" : "N") << "\n";
+                  << std::setw(8) << (log.bagsMatch ? "Y" : "N") << " | "
+                  << std::setw(7) << log.diskOutcome << " | "
+                  << std::setw(7) << log.regOutcome << " | "
+                  << std::setw(9) << (log.measurementMatch ? "Y" : "N") << "\n";
     }
     std::cout << "\n====================\n";
     std::cout << "Permutations before restoration:\n";

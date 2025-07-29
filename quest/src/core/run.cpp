@@ -131,7 +131,7 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
     std::vector<SubCircuit> subcircuits = scheduler.partitionIntoSubcircuits(numQubits, numLocalQubits, state, verbose);
 
     // === DEBUG: Print subcircuit partitioning and permutations ===
-    std::cout << "[DEBUG] Partitioned into " << subcircuits.size() << " subcircuits\n";
+    // std::cout << "[DEBUG] Partitioned into " << subcircuits.size() << " subcircuits\n";
     for (size_t i = 0; i < subcircuits.size(); ++i) {
         const auto& sub = subcircuits[i];
         //std::cout << "[DEBUG] Subcircuit " << i << ":\n";
@@ -197,14 +197,13 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
            std::cout << p << "->" << tracker.currentPermutation[p] << " ";
         }
         std::cout << "\n";
-        // Print the permutation used for this subcircuit
+        
         std::cout << "[Pipeline] Subcircuit " << i << " permutation (logical->physical): ";
         for (size_t p = 0; p < subcircuits[i].permutation.size(); ++p) {
             std::cout << p << "->" << subcircuits[i].permutation[p] << " ";
         }
         std::cout << "\n";
         // IMPORTANT: The subcircuit's permutation must be used to map logical to physical qubits when applying gates.
-        // If bugs persist, consider backtracking and verifying the mapping logic in detail, as errors here can corrupt the state.
         tracker.currentPermutation = subcircuits[i].permutation;
 
         std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
@@ -334,9 +333,7 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
                 }
                 std::cout << "\n";
             }
-        } else {
-            std::cout << "[Pipeline] No area swap shuffle for subcircuit " << i << " (last subcircuit)\n";
-        }
+        } 
     } 
 }
 

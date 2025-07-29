@@ -222,8 +222,8 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
 
     // NOTE: This is a temporary bandaid fix. There is a bug where if the last qubit is correct
     // on the penultimate subcircuit, it will not be restored correctly. Root cause is
-    // unknown. TODO: Fix this properly. For now, we can omit the runtime from this fix.
-
+    // unknown. More accurately, it seems that the issue happens when the swap doesnt involve the last qubit.
+    // TODO: Fix this properly. 
     // Check if the final subcircuit ends with the highest qubit
     bool needsTwoStepRestoration = false;
     if (!result.empty()) {
@@ -273,6 +273,7 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
     return result;
 }
 
+// ─── Quantum Supremacy Circuit ─────────────────────────────
 void GateScheduler::addQSC(int numQubits, int depth) {
     // Initialize random number generator
     std::mt19937 rng(std::time(nullptr));

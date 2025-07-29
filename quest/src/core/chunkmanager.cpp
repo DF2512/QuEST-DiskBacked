@@ -33,12 +33,6 @@ vector<pair<int, int>> getSwapStepsToTarget(
 
             swap(current[i], current[j]);
             steps.emplace_back(i, j);
-
-            if (verbose) {
-                cout << "Swap index " << i << " and " << j << " => ";
-                for (int v : current) cout << v << " ";
-                cout << endl;
-            }
         }
     }
     return steps;
@@ -64,25 +58,6 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
     vector<pair<int, int>> swap1;
     vector<pair<int, int>> swap2_rev;
 
-    // --- DEBUG: Print initial regions ---
-    std::cout << "[align] Initial interim_prev: ";
-    for (int v : interim_prev) std::cout << v << " ";
-    std::cout << "\n[align] Initial interim_target: ";
-    for (int v : interim_target) std::cout << v << " ";
-    std::cout << "\n[align] Lower region (prev): ";
-    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_prev[i] << " ";
-    std::cout << "\n[align] Middle region (prev): ";
-    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_prev[i] << " ";
-    std::cout << "\n[align] Upper region (prev): ";
-    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_prev[i] << " ";
-    std::cout << "\n";
-    std::cout << "[align] Lower region (target): ";
-    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_target[i] << " ";
-    std::cout << "\n[align] Middle region (target): ";
-    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_target[i] << " ";
-    std::cout << "\n[align] Upper region (target): ";
-    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_target[i] << " ";
-    std::cout << "\n";
     // 2. For swap1: For each qubit q in the upper region of the target permutation
     std::vector<bool> middle_used(middle_end - middle_start, false);
     std::vector<bool> upper_preserved(upper_end - upper_start, false);
@@ -152,12 +127,6 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         int lower_idx = std::distance(interim_prev.begin(), it);
         std::swap(interim_prev[lower_idx], interim_prev[middle_slot]);
         swap1.emplace_back(lower_idx, middle_slot);
-        std::cout << "[DEBUG] swap1: Swapped lower_idx=" << lower_idx << " with middle_slot=" << middle_slot << " for q=" << q << std::endl;
-        
-        // Special debug for qubit 19
-        if (q == 19) {
-            std::cout << "[DEBUG] *** QUBIT 19 MOVED from position " << lower_idx << " to " << middle_slot << " ***" << std::endl;
-        }
         
         // After each q, recheck all previous qs
         for (int prev_qidx = 0; prev_qidx <= qidx; ++prev_qidx) {
@@ -168,16 +137,6 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
             }
         }
     }
-    // --- DEBUG: Print after swap1 ---
-    std::cout << "[align] After swap1, interim_prev: ";
-    for (int v : interim_prev) std::cout << v << " ";
-    std::cout << "\n[align] Lower region (prev): ";
-    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_prev[i] << " ";
-    std::cout << "\n[align] Middle region (prev): ";
-    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_prev[i] << " ";
-    std::cout << "\n[align] Upper region (prev): ";
-    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_prev[i] << " ";
-    std::cout << "\n";
 
     // 3. For swap2: Make interim_target's lower region match interim_prev's lower region
     while (true) {
@@ -194,22 +153,12 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
             int j = std::distance(interim_target.begin(), it);
             std::swap(interim_target[i], interim_target[j]);
             swap2_rev.emplace_back(i, j);
-            std::cout << "[DEBUG] swap2_rev: Swapped " << i << " and " << j << " to match lower region" << std::endl;
+        
             // After a swap, restart from the beginning
             break;
         }
         if (all_match) break;
     }
-    // --- DEBUG: Print after swap2_rev ---
-    std::cout << "[align] After swap2_rev, interim_target: ";
-    for (int v : interim_target) std::cout << v << " ";
-    std::cout << "\n[align] Lower region (target): ";
-    for (int i = lower_start; i < lower_end; ++i) std::cout << interim_target[i] << " ";
-    std::cout << "\n[align] Middle region (target): ";
-    for (int i = middle_start; i < middle_end; ++i) std::cout << interim_target[i] << " ";
-    std::cout << "\n[align] Upper region (target): ";
-    for (int i = upper_start; i < upper_end; ++i) std::cout << interim_target[i] << " ";
-    std::cout << "\n";
 
     // 4. Check that the lower regions of interim_prev and interim_target match
     bool lower_match = true;
@@ -340,59 +289,17 @@ Transition PermutationTracker::generateTransition(
     const std::vector<int>& prev_perm,
     const std::vector<int>& target_perm
 ) {
-    std::cout << "[DEBUG] generateTransition called\n";
-    std::cout << "[DEBUG] prev_perm: ";
-    for (int p : prev_perm) std::cout << p << " ";
-    std::cout << "\n";
-    std::cout << "[DEBUG] target_perm: ";
-    for (int p : target_perm) std::cout << p << " ";
-    std::cout << "\n";
-
+    
     auto [swap1, swap2_rev, interim_target] = alignUpperQubitsAndGenerateInterim(prev_perm, target_perm);
 
-    std::cout << "[DEBUG] After alignUpperQubitsAndGenerateInterim:\n";
-    std::cout << "[DEBUG] swap1 size: " << swap1.size() << "\n";
-    std::cout << "[DEBUG] swap2_rev size: " << swap2_rev.size() << "\n";
-    std::cout << "[DEBUG] interim_target: ";
-    for (int p : interim_target) std::cout << p << " ";
-    std::cout << "\n";
-
     std::vector<int> interim_prev = applySwaps(prev_perm, swap1);
-
-    std::cout << "[DEBUG] interim_prev: ";
-    for (int p : interim_prev) std::cout << p << " ";
-    std::cout << "\n";
 
     std::vector<int> current(interim_prev.begin() + qubitsPerChunk, interim_prev.begin() + numQubits);
     std::vector<int> target(interim_target.begin() + qubitsPerChunk, interim_target.begin() + numQubits);
 
-    std::cout << "[DEBUG] current (middle+upper): ";
-    for (int p : current) std::cout << p << " ";
-    std::cout << "\n";
-    std::cout << "[DEBUG] target (middle+upper): ";
-    for (int p : target) std::cout << p << " ";
-    std::cout << "\n";
-
-    std::cout << "[DEBUG] generate_transition: comparing current vs target permutation\n";
-    for (size_t i = 0; i < current.size(); ++i) {
-        if (current[i] != target[i]) {
-            std::cout << "  mismatch at index " << i << ": current = " << current[i]
-                      << ", target = " << target[i] << "\n";
-        }
-    }
-
     std::vector<int> levels = swapToMatch(current, target);
 
-    std::cout << "[DEBUG] swapToMatch returned levels: ";
-    for (int level : levels) std::cout << level << " ";
-    std::cout << "\n";
-
     std::reverse(swap2_rev.begin(), swap2_rev.end());
-
-    std::cout << "[DEBUG] Final transition:\n";
-    std::cout << "[DEBUG] swap1 size: " << swap1.size() << "\n";
-    std::cout << "[DEBUG] levels size: " << levels.size() << "\n";
-    std::cout << "[DEBUG] swap2_rev size: " << swap2_rev.size() << "\n";
 
     return Transition{
         swap1,
@@ -432,15 +339,6 @@ PermutationTracker::PermutationTracker(int numQubits_, int numBlocks_, int chunk
 
     chunkMap.resize(numChunks);
     std::iota(chunkMap.begin(), chunkMap.end(), 0);
-
-    std::cout << "[Init] Initial chunkMap:\n";
-    for (int i = 0; i < chunkMap.size(); ++i) {
-        std::cout << "  chunkMap[" << i << "] = " << chunkMap[i] << "\n";
-    }
-    std::cout << "[Init] Initial currentPermutation:\n";
-    for (int i = 0; i < currentPermutation.size(); ++i) {
-        std::cout << "  currentPermutation[" << i << "] = " << currentPermutation[i] << "\n";
-    }
 }
 
 
