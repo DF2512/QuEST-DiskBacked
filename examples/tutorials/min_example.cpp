@@ -40,13 +40,15 @@ int main() {
     reportQuESTEnv();
 
     // Parameters
-    std::vector<int> qubitSizes = {30, 31, 32, 33, 34, 35};
-    std::vector<int> numBlocksList = {8, 8, 8, 8, 8, 8};
-    std::vector<int> chunksPerBlockList = {8, 8, 8, 8, 8, 8};
-    const int numRuns = 20; 
+    std::vector<int> qubitSizes = {30,31,32,33,34,35,36};
+    std::vector<int> numBlocksList = {4,4,8,16,16,32,64};
+    std::vector<int> chunksPerBlockList = {4,4,8,16,16,32,64};
+    const int numRuns = 1; 
     std::vector<std::string> diskRoots = {
-        "C:/quantum_chunks0",
-        "D:/quantum_chunks1"
+        "/quantum/quantum_chunks0",
+        "/quantum/quantum_chunks1",
+        "/quantum_chunks2",
+        "/home/s2767757/quantum_chunks3"
     };
     
     std::vector<RunData> runData;
@@ -78,11 +80,14 @@ int main() {
             // Create disk-backed state, initialise with random pure state
             DiskBackedState diskState(numQubits, numBlocks, chunksPerBlock, diskRoots);
             diskState.diskBacked_initRandomPureState();
+            //Qureg qureg = createForcedQureg(numQubits);
+            //initRandomPureState(qureg);
 
             // Create a schedule, add either a QFT or a QSC with chosen parameters
             GateScheduler scheduler;
             scheduler.addFullQFT(numQubits);
             // scheduler.addQSC(numQubits, 8); // Adjust depth as needed
+            //applyFullQuantumFourierTransform(qureg);
 
             // Apply the schedule to the disk-backed state
             runCircuit(scheduler, diskState, false);
@@ -95,15 +100,18 @@ int main() {
             // Check total probability, start new timer
             auto measureStart = std::chrono::high_resolution_clock::now();
 
-            double totalProb = diskState.diskBacked_calcTotalProbability();
+            qreal totalProb = diskState.diskBacked_calcTotalProbability();
+            //qreal totalProb = calcTotalProb(qureg);
             data.initialProb = totalProb;
 
             // Measure a qubit
             int outcome = diskState.diskBacked_applyQubitMeasurement(0); // Choose a qubit to measure
+            //int outcome = applyQubitMeasurement(qureg, 0); 
             data.measurementOutcome = outcome;
 
             // Check probability again to ensure it remains 1
-            double finalProb = diskState.diskBacked_calcTotalProbability();
+            qreal finalProb = diskState.diskBacked_calcTotalProbability();
+            //qreal finalProb = calcTotalProb(qureg);
             data.finalProb = finalProb;
             data.probCheckPassed = (std::abs(finalProb - 1.0) < 1e-10);
 
@@ -137,7 +145,6 @@ int main() {
     if (logFile.is_open()) {
         logFile << "QuEST Disk-Backed State Performance Log" << std::endl;
         logFile << "======================================" << std::endl;
-        logFile << "Date: " << std::chrono::system_clock::now().time_since_epoch().count() << std::endl;
         logFile << "Parameters: numRuns=" << numRuns << " per qubit size" << std::endl;
         logFile << "Qubit sizes tested: ";
         for (size_t i = 0; i < qubitSizes.size(); ++i) {

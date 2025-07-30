@@ -2,7 +2,7 @@
 #include "quest/include/environment.h"
 #include <vector>
 
-// Given a buffer and metadata, create a Qureg struct that points to it
+// Given a buffer and metadata, create a Qureg that points to it
 Qureg createTempQureg(std::vector<qcomp>& buffer, int qubits) {
     QuESTEnv env = getQuESTEnv();
     
@@ -18,7 +18,6 @@ Qureg createTempQureg(std::vector<qcomp>& buffer, int qubits) {
     tempQureg.isGpuAccelerated = env.isGpuAccelerated;
     tempQureg.isMultithreaded = env.isMultithreaded;
     tempQureg.numNodes = 1;
-    // ...set other fields as needed
     return tempQureg;
 }
 

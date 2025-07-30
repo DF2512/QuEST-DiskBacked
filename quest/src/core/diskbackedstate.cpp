@@ -198,7 +198,7 @@ qreal DiskBackedState::diskBacked_calcTotalProbability() const {
         
         Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
 
-        std::cout << "First amplitude for chunk [" << i << "] = " << tempQureg.cpuAmps[0] << "\n"; 
+        
         total += calcTotalProb(tempQureg);
         
     }
@@ -208,38 +208,15 @@ qreal DiskBackedState::diskBacked_calcTotalProbability() const {
 
 int DiskBackedState::diskBacked_applyQubitMeasurement(int qubit) {
     std::vector<qreal> probs(2, 0.0);
-    std::cout << "Applying measurement to qubit " << qubit << std::endl;
+    
     if (qubit <= numQubitsPerChunk) {
         // Qubit is within chunk size - simple case
         for (size_t i = 0; i < numChunks; ++i) {
-            std::cout << "Loading chunk " << i << std::endl;
             std::vector<qcomp> buffer;
             loadChunk(i, buffer);
-            std::cout << "Creating temp qureg" << std::endl;
             Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
-            std::cout << "Temp qureg created with " << tempQureg.numAmps << " amplitudes" << std::endl;
-            std::cout << "First amplitude: " << tempQureg.cpuAmps[0] << std::endl;
-            std::cout << "Calculating probabilities" << std::endl;
             probs[0] += calcProbOfQubitOutcome(tempQureg, qubit, 0);
             probs[1] += calcProbOfQubitOutcome(tempQureg, qubit, 1);
-            std::cout << "Probabilities: " << probs[0] << " " << probs[1] << std::endl;
-            std::cout << "About to destroy qureg for chunk " << i << std::endl;
-            std::cout << "Qureg details before destroy - numAmps: " << tempQureg.numAmps << ", numQubits: " << tempQureg.numQubits << std::endl;
-            std::cout << "About to call destroyQureg..." << std::endl;
-            // Commenting out destroyQureg call as it seems to be causing issues
-            // try {
-            //     destroyQureg(tempQureg);
-            //     std::cout << "destroyQureg completed successfully" << std::endl;
-            // } catch (const std::exception& e) {
-            //     std::cout << "Exception in destroyQureg: " << e.what() << std::endl;
-            //     throw;
-            // } catch (...) {
-            //     std::cout << "Unknown exception in destroyQureg" << std::endl;
-            //     throw;
-            // }
-            std::cout << "Skipped destroyQureg call" << std::endl;
-            std::cout << "After try-catch block" << std::endl;
-            std::cout << "Chunk " << i << " processed" << std::endl;
         }
     } else {
         // Qubit is outside chunk size - need to handle chunk mapping and regions
@@ -265,17 +242,17 @@ int DiskBackedState::diskBacked_applyQubitMeasurement(int qubit) {
             // destroyQureg(tempQureg);
         }
     }
-    std::cout << "Probs: " << probs[0] << " " << probs[1] << std::endl;
+    
     // Determine measurement outcome
     int outcome = rand_getRandomSingleQubitOutcome(probs[0]);
-    std::cout << "Outcome: " << outcome << std::endl;
+    
     // Renormalize based on outcome
     qreal correctProb = probs[outcome];
     qreal wrongProb = probs[1 - outcome];
     qreal normalizationFactor = 1.0 / std::sqrt(correctProb);
-    std::cout << "Normalization factor: " << normalizationFactor << std::endl;
+    
     // Apply renormalization to all chunks
-    std::cout << "Applying renormalization to all chunks" << std::endl;
+    
     for (size_t logicalChunk = 0; logicalChunk < numChunks; ++logicalChunk) {
         size_t physicalChunk = permTracker.getCurrentChunkMap()[logicalChunk];
         std::vector<qcomp> buffer;
@@ -324,6 +301,6 @@ int DiskBackedState::diskBacked_applyQubitMeasurement(int qubit) {
         
         saveChunk(physicalChunk, buffer);
     }
-    std::cout << "Measurement complete" << std::endl;
+    
     return outcome;
 }

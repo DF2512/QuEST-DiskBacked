@@ -20,13 +20,13 @@
 std::mutex memMtx;
 std::condition_variable memCv;
 int inFlightBlocks = 0;
-constexpr int maxBlocksInMemory = 1;
+constexpr int maxBlocksInMemory = 3;
 
 // Helper: Given a logical qubit index, find its physical position in the permutation
 static int logicalToPhysical(const std::vector<int>& permutation, int logicalQubit) {
     auto it = std::find(permutation.begin(), permutation.end(), logicalQubit);
     if (it == permutation.end()) {
-        throw std::runtime_error("[run.cpp] logicalToPhysical: Logical qubit not found in permutation");
+        throw std::runtime_error("logicalToPhysical: Logical qubit not found in permutation");
     }
     return static_cast<int>(std::distance(permutation.begin(), it));
 }
@@ -130,38 +130,8 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
     // Partition into subcircuits
     std::vector<SubCircuit> subcircuits = scheduler.partitionIntoSubcircuits(numQubits, numLocalQubits, state, verbose);
 
-    // === DEBUG: Print subcircuit partitioning and permutations ===
-    // std::cout << "[DEBUG] Partitioned into " << subcircuits.size() << " subcircuits\n";
-    for (size_t i = 0; i < subcircuits.size(); ++i) {
-        const auto& sub = subcircuits[i];
-        //std::cout << "[DEBUG] Subcircuit " << i << ":\n";
-        //std::cout << "  Permutation: ";
-        for (size_t j = 0; j < sub.permutation.size(); ++j) {
-            std::cout << sub.permutation[j] << " ";
-        }
-        //std::cout << "\n";
-        //std::cout << "  Gates (type, target, control, angle, k):\n";
-        for (size_t g = 0; g < sub.gates.size(); ++g) {
-            const auto& gate = sub.gates[g];
-            //std::cout << "    [" << g << "] type: " << static_cast<int>(gate.type)
-                      //<< ", target: " << gate.target
-                      //<< ", control: " << gate.control
-                      //<< ", angle: " << gate.angle
-                      //<< ", k: " << gate.k << "\n";
-        }
-    }
-    // Also print the blockChunkMapping for the first subcircuit
     std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
-    //std::cout << "[DEBUG] Block-chunk mapping for first subcircuit (block -> chunk indices):\n";
-    //for (size_t b = 0; b < blockChunkMapping.size(); ++b) {
-        //std::cout << "  Block " << b << ": ";
-        //for (size_t c = 0; c < blockChunkMapping[b].size(); ++c) {
-            //std::cout << blockChunkMapping[b][c] << " ";
-        //}
-        //std::cout << "\n";
-    //}
-    // === END DEBUG ===
-
+    
     // Generate transitions
     std::vector<Transition> transitions = tracker.generateTransitions(subcircuits);
 
@@ -203,7 +173,7 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
             std::cout << p << "->" << subcircuits[i].permutation[p] << " ";
         }
         std::cout << "\n";
-        // IMPORTANT: The subcircuit's permutation must be used to map logical to physical qubits when applying gates.
+        // The subcircuit's permutation must be used to map logical to physical qubits when applying gates.
         tracker.currentPermutation = subcircuits[i].permutation;
 
         std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
@@ -337,121 +307,3 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
     } 
 }
 
-// Pipeline function without triple buffering, for benchmarking reasons
-/*
-void runPipeline(GateScheduler& scheduler, DiskBackedState& state, bool verbose) {
-    int numQubits = state.getNumQubits();
-    int numLocalQubits = state.getNumQubitsPerBlock();
-    int numBlocks = state.getNumBlocks();
-    int qubitsPerBlock = numLocalQubits;
-    PermutationTracker& tracker = state.getPermutationTracker();
-
-    // Partition into subcircuits
-    std::vector<SubCircuit> subcircuits = scheduler.partitionIntoSubcircuits(numQubits, numLocalQubits, state, verbose);
-
-    // Generate transitions
-    std::vector<Transition> transitions = tracker.generateTransitions(subcircuits);
-
-    std::cout << "[PipelineNoTripleBuffer] Generated " << transitions.size() << " transitions\n";
-    for (size_t i = 0; i < transitions.size(); ++i) {
-        std::cout << "[PipelineNoTripleBuffer] Transition " << i << ":\n";
-        std::cout << "  swap1 size: " << transitions[i].swap1.size() << "\n";
-        std::cout << "  swap2 size: " << transitions[i].swap2.size() << "\n";
-        std::cout << "  swapLevels size: " << transitions[i].swapLevels.size() << "\n";
-    }
-
-    for (size_t i = 0; i < subcircuits.size(); ++i) {
-        std::cout << "\n[PipelineNoTripleBuffer] Processing subcircuit " << i << "\n";
-        std::cout << "[PipelineNoTripleBuffer] Current chunkMap: ";
-        for (int j = 0; j < tracker.chunkMap.size(); ++j) {
-            std::cout << tracker.chunkMap[j] << " ";
-        }
-        std::cout << "\n";
-
-        std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
-
-        // Timing vectors
-        std::vector<double> readerTimes(numBlocks, 0.0);
-        std::vector<double> processorTimes(numBlocks, 0.0);
-        std::vector<double> writerTimes(numBlocks, 0.0);
-
-        for (int blockIdx = 0; blockIdx < numBlocks; ++blockIdx) {
-            auto t0 = std::chrono::high_resolution_clock::now();
-            BlockData block;
-            block.blockIdx = blockIdx;
-            block.chunkIndices = blockChunkMapping[blockIdx];
-            state.loadBlock(block.blockIdx, block.chunkIndices, block.buffer);
-            auto t1 = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsedRead = t1 - t0;
-            readerTimes[blockIdx] = elapsedRead.count();
-
-            auto t2 = std::chrono::high_resolution_clock::now();
-            // Apply swap2 if not the first subcircuit
-            if (i > 0 && !transitions[i-1].swap2.empty()) {
-                std::cout << "[NoTripleBuffer] Applying swap2 to block " << blockIdx << "\n";
-                SubCircuit swap2;
-                swap2.gates = scheduleSwaps(transitions[i-1].swap2);
-                swap2.permutation = transitions[i-1].interimTarget;
-                if (blockIdx == 0)
-                    applySubCircuitToBlockDebug(swap2, block.buffer, qubitsPerBlock);
-                else
-                    applySubCircuitToBlock(swap2, block.buffer, qubitsPerBlock);
-            }
-
-            if (block.blockIdx == 0)
-                applySubCircuitToBlockDebug(subcircuits[i], block.buffer, qubitsPerBlock);
-            else
-                applySubCircuitToBlock(subcircuits[i], block.buffer, qubitsPerBlock);
-            auto t3 = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsedProc = t3 - t2;
-            processorTimes[blockIdx] = elapsedProc.count();
-
-            // Apply swap1 if not the last subcircuit
-            auto t4 = std::chrono::high_resolution_clock::now();
-            if (i < transitions.size() && !transitions[i].swap1.empty()) {
-                SubCircuit swap1;
-                swap1.gates = scheduleSwaps(transitions[i].swap1);
-                swap1.permutation = subcircuits[i].permutation;
-                if (block.blockIdx == 0)
-                    applySubCircuitToBlockDebug(swap1, block.buffer, qubitsPerBlock);
-                else
-                    applySubCircuitToBlock(swap1, block.buffer, qubitsPerBlock);
-            }
-            state.saveBlock(block.blockIdx, block.chunkIndices, block.buffer);
-            auto t5 = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsedWrite = t5 - t4;
-            writerTimes[blockIdx] = elapsedWrite.count();
-        }
-
-        // Print per-block and average times
-        auto printTimes = [](const std::string& label, const std::vector<double>& times) {
-            double sum = 0.0;
-            std::cout << "[Timing] " << label << " times per block:\n";
-            for (size_t i = 0; i < times.size(); ++i) {
-                std::cout << "  Block " << i << ": " << times[i] << " s\n";
-                sum += times[i];
-            }
-            std::cout << "  Average: " << (sum / times.size()) << " s\n";
-        };
-        printTimes("Reader", readerTimes);
-        printTimes("Processor", processorTimes);
-        printTimes("Writer", writerTimes);
-
-        // --- After all blocks processed, update chunkMap if not last subcircuit ---
-        if (i < transitions.size()) {
-            std::cout << "[PipelineNoTripleBuffer] Applying area swap shuffle for transition " << i << "\n";
-            for (int level : transitions[i].swapLevels) {
-                std::cout << "[PipelineNoTripleBuffer] Area swap level: " << level << "\n";
-                int maxLevel = *std::max_element(transitions[i].swapLevels.begin(), transitions[i].swapLevels.end());
-                std::vector<int> newChunkMap = tracker.areaSwapShuffle(tracker.chunkMap, level, maxLevel);
-                tracker.chunkMap = newChunkMap;
-            }
-            std::cout << "[PipelineNoTripleBuffer] New chunkMap: ";
-            for (int j = 0; j < tracker.chunkMap.size(); ++j) {
-                std::cout << tracker.chunkMap[j] << " ";
-            }
-            std::cout << "\n";
-        }
-    }
-}
-*/

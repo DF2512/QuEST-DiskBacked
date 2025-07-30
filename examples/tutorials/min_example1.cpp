@@ -101,8 +101,8 @@ int main() {
         log.segfaultOrException = false;
 
         const int numQubits = 20;
-        const int numBlocks = 8;
-        const int chunksPerBlock = 8;
+        const int numBlocks = 32;
+        const int chunksPerBlock = 32;
         std::vector<std::string> diskRoots = {
             "C:/quantum_chunks0",
             "D:/quantum_chunks1"
@@ -156,7 +156,7 @@ int main() {
         std::shuffle(qubitOrder.begin(), qubitOrder.end(), rng);
         // Uncomment ONE block below to test a single gate type at a time
         
-        /**/
+        /*
         // --- Hadamard ---
         for (int idx = 0; idx < numQubits; ++idx) {
             int q = qubitOrder[idx];
@@ -237,13 +237,15 @@ int main() {
             int q = swapOrder[idx];
             scheduler.addSwap(q, q+1);
         }
-        
+        */
+
         // --- Quantum Supremacy Circuit ---
         //scheduler.addQSC(numQubits, 8); // 3 cycles of quantum supremacy circuit
         
         // --- Full QFT ---
-        // scheduler.addFullQFT(numQubits);
+        scheduler.addFullQFT(numQubits);
 
+        /*
         // 5. Apply the schedule to the regular Qureg using direct gate functions
         const auto& schedule = scheduler.getSchedule();
         for (const auto& op : schedule) {
@@ -286,8 +288,9 @@ int main() {
                     break;
             }
         }
+            */
 
-        // applyFullQuantumFourierTransform(qureg);
+        applyFullQuantumFourierTransform(qureg);
 
 
         // 6. Apply the schedule to the disk-backed state
@@ -434,7 +437,7 @@ int main() {
                 }
             }
             log.success = false;
-            //std::exit(1); // DISABLED: do not exit on failure
+            //std::exit(1); 
         }
 
         destroyQureg(qureg);

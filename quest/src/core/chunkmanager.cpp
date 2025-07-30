@@ -52,13 +52,13 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
     int upper_start = qubitsPerBlock;
     int upper_end = numQubits;
 
-    // 1. Make interim_prev and interim_target
+    // Make interim_prev and interim_target
     vector<int> interim_prev = previous_permutation;
     vector<int> interim_target = target_permutation;
     vector<pair<int, int>> swap1;
     vector<pair<int, int>> swap2_rev;
 
-    // 2. For swap1: For each qubit q in the upper region of the target permutation
+    // For swap1: For each qubit q in the upper region of the target permutation
     std::vector<bool> middle_used(middle_end - middle_start, false);
     std::vector<bool> upper_preserved(upper_end - upper_start, false);
     
@@ -138,7 +138,7 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         }
     }
 
-    // 3. For swap2: Make interim_target's lower region match interim_prev's lower region
+    // For swap2: Make interim_target's lower region match interim_prev's lower region
     while (true) {
         bool all_match = true;
         for (int i = lower_start; i < lower_end; ++i) {
@@ -160,7 +160,7 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         if (all_match) break;
     }
 
-    // 4. Check that the lower regions of interim_prev and interim_target match
+    // Check that the lower regions of interim_prev and interim_target match
     bool lower_match = true;
     for (int i = lower_start; i < lower_end; ++i) {
         if (interim_prev[i] != interim_target[i]) {
@@ -177,7 +177,7 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         std::cerr << std::endl;
     }
 
-    // 5. Check that the sets of the combined middle+upper regions match
+    // Check that the sets of the combined middle+upper regions match
     std::set<int> interim_prev_middle_upper(interim_prev.begin() + middle_start, interim_prev.end());
     std::set<int> interim_target_middle_upper(interim_target.begin() + middle_start, interim_target.end());
     if (interim_prev_middle_upper != interim_target_middle_upper) {
@@ -189,7 +189,7 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         std::cerr << std::endl;
     }
 
-    // 6. Return swap1, swap2_rev, interim_target
+    // Return swap1, swap2_rev, interim_target
     return {swap1, swap2_rev, interim_target};
 }
 
@@ -204,13 +204,7 @@ vector<int> applySwaps(const vector<int>& permutation, const vector<pair<int, in
 
 // Function to generate swap steps to match a target permutation
 vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
-    //std::cout << "[DEBUG] swapToMatch called\n";
-    //std::cout << "[DEBUG] current: ";
-    //for (int c : current) std::cout << c << " ";
-    //std::cout << "\n";
-    //std::cout << "[DEBUG] target: ";
-    //for (int t : target) std::cout << t << " ";
-    //std::cout << "\n";
+    
 
     vector<int> steps;
 
@@ -235,10 +229,6 @@ vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
 
 // Function containing logic for chunk index permuting
 vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int level, int max_level) {
-    //std::cout << "[DEBUG] areaSwapShuffle called with:\n";
-    //std::cout << "[DEBUG] perm size: " << perm.size() << "\n";
-    //std::cout << "[DEBUG] level: " << level << "\n";
-    //std::cout << "[DEBUG] max_level: " << max_level << "\n";
     
     int x = 1 << (max_level - level);
     //cout << "\n=== Shuffling with x = " << x << " ===\n";
@@ -325,7 +315,7 @@ std::vector<Transition> PermutationTracker::generateTransitions(const std::vecto
     return transitions;
 }
 
-// ─── Constructor ──────────────────────────────────────
+// Constructor for PermutationTracker
 PermutationTracker::PermutationTracker(int numQubits_, int numBlocks_, int chunksPerBlock_)
     : numQubits(numQubits_), numBlocks(numBlocks_), chunksPerBlock(chunksPerBlock_)
 {
@@ -333,7 +323,7 @@ PermutationTracker::PermutationTracker(int numQubits_, int numBlocks_, int chunk
     qubitsPerBlock = numQubits - static_cast<int>(std::log2(numBlocks));
     qubitsPerChunk = qubitsPerBlock - static_cast<int>(std::log2(chunksPerBlock));
     
-    // Initial layout: identity permutation and linear chunk map
+    // identity permutation and linear chunk map
     currentPermutation.resize(numQubits);
     std::iota(currentPermutation.begin(), currentPermutation.end(), 0);
 
@@ -343,12 +333,9 @@ PermutationTracker::PermutationTracker(int numQubits_, int numBlocks_, int chunk
 
 
 
-// ─── Block-Chunk Mapping ──────────────────────────────
+// Function to determine the current block-chunk mapping
 std::vector<std::vector<int>> PermutationTracker::getBlockChunkMapping() const {
-    //std::cout << "[PermutationTracker] Generating block-chunk mapping...\n";
-    //std::cout << "  numBlocks: " << numBlocks << "\n";
-    //std::cout << "  chunksPerBlock: " << chunksPerBlock << "\n";
-    //std::cout << "  chunkMap.size(): " << chunkMap.size() << "\n";
+    
 
     std::vector<std::vector<int>> blocks(numBlocks);
 
@@ -376,6 +363,7 @@ std::vector<std::vector<int>> PermutationTracker::getBlockChunkMapping() const {
     return blocks;
 }
 
+//Accessors
 const std::vector<int>& PermutationTracker::getCurrentPermutation() const {
     return currentPermutation;
 }

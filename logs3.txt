@@ -1,0 +1,17 @@
+QuEST Disk-Backed State Performance Log
+======================================
+Parameters: numRuns=1 per qubit size
+Qubit sizes tested: 29
+
+Qubits | Blocks | Chunks | Run | Elapsed(s) | Measure(s) | Total(s) | InitialProb | FinalProb | ProbCheck | Outcome
+-------|--------|--------|-----|------------|------------|----------|-------------|-----------|-----------|---------
+    29 |      8 |      8 |   1 | 582.180582 |  53.815540 | 635.996121 |    1.000000 |  1.000000 |      PASS |       0
+
+Summary Statistics by Qubit Size:
+=================================
+Qubits 29:
+  Average Elapsed Time: 582.180582s
+  Average Measure Time: 53.815540s
+  Average Total Time: 635.996121s
+  Probability Check Pass Rate: 1/1 (100.000000%)
+

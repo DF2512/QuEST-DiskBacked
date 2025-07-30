@@ -17,7 +17,7 @@
 #include "operations.h"
 #include "qureg.h"
 
-// ─── Dispatcher: Apply a GateOp to a Qureg ─────────────
+// ───  Apply a GateOp to a Qureg ─────────────
 void GateScheduler::applyGateOpToQureg(const GateOp& op, Qureg& qureg) {
     switch (op.type) {
         case GateType::Hadamard:
@@ -53,7 +53,7 @@ void GateScheduler::applyGateOpToQureg(const GateOp& op, Qureg& qureg) {
         case GateType::Swap:
             applySwap(qureg, op.target, op.control);
             break;
-        // ... add more cases as needed
+        // ... add more gates as needed
         default:
             std::cerr << "[GateScheduler] Unknown gate type in dispatcher!\n";
             break;
@@ -278,7 +278,7 @@ void GateScheduler::addQSC(int numQubits, int depth) {
     // Initialize random number generator
     std::mt19937 rng(std::time(nullptr));
     std::uniform_int_distribution<int> patternDist(0, 7);
-    std::uniform_int_distribution<int> singleQubitDist(0, 2); // 0=X1/2, 1=Y1/2, 2=T
+    std::uniform_int_distribution<int> singleQubitDist(0, 2); // 0=SqrtX, 1=SqrtY, 2=T
     
     // Track previous gates for each qubit
     std::vector<GateType> previousGates(numQubits, GateType::Hadamard); // Initial Hadamard cycle
@@ -327,6 +327,7 @@ void GateScheduler::addQSC(int numQubits, int depth) {
         }
         
         // If we couldn't find a valid pattern, use the first one (fallback)
+        // A better fallback will be implemented later
         if (!validPattern) {
             selectedPattern = patterns[0];
         }
@@ -349,8 +350,6 @@ void GateScheduler::addQSC(int numQubits, int depth) {
                     // Rule: Place a T gate if there are no single-qubit gates in previous cycles except initial Hadamard
                     bool hasHadSingleQubitGate = false;
                     for (int prevCycle = 1; prevCycle < cycle; prevCycle++) {
-                        // This is a simplified check - in practice you'd need to track this more precisely
-                        // For now, we'll use the previousGates tracking
                         if (previousGates[q] != GateType::Hadamard && previousGates[q] != GateType::CZ) {
                             hasHadSingleQubitGate = true;
                             break;
@@ -377,7 +376,7 @@ void GateScheduler::addQSC(int numQubits, int depth) {
                                 selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtY : GateType::T;
                             } else if (previousGates[q] == GateType::SqrtY) {
                                 selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtX : GateType::T;
-                            } else { // previousGates[q] == GateType::T
+                            } else { 
                                 selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtX : GateType::SqrtY;
                             }
                         }
