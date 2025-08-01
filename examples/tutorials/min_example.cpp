@@ -45,8 +45,10 @@ int main() {
     std::vector<int> chunksPerBlockList = {4,8,16,32};
     const int numRuns = 1; 
     std::vector<std::string> diskRoots = {
-        "C:/quantum_chunks0",
-        "D:/quantum_chunks1"
+        "/quantum/quantum_chunks0",
+        "/quantum/quantum_chunks1",
+        "/quantum_chunks2",
+        "/home/s2767757/quantum_chunks3"
     };
     
     std::vector<RunData> runData;

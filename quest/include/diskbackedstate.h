@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <complex>
+#include <liburing.h>
 #include "types.h"
 #include "chunkmanager.h"
 #include "calculations.h"
@@ -44,6 +45,9 @@ private:
     size_t numAmplitudes; // total number of amplitudes in the state vector
     size_t numChunks; // total number of chunks
     size_t ampsPerChunk; // number of amplitudes per chunk
+    mutable io_uring ring;
+    mutable bool ioInitialised = false;
+    void ensureIoUringInitialised() const;
 
     std::vector<std::string> diskRoots;
     std::vector<std::string> chunkPaths;

@@ -57,51 +57,100 @@ size_t DiskBackedState::getNumAmplitudes() const { return numAmplitudes; }
 size_t DiskBackedState::getNumChunks() const { return numChunks; }
 size_t DiskBackedState::getAmpsPerChunk() const { return ampsPerChunk; }
 
-void DiskBackedState::loadChunk(size_t chunkIndex, std::vector<qcomp>& buffer) const {
-    if (chunkIndex >= numChunks) {
-        throw std::runtime_error("loadChunk: chunkIndex out of bounds");
+void DiskBackedState::ensureIoUringInitialised() const {
+    if (!ioInitialised) {
+        if (io_uring_queue_init(32, &ring, 0) < 0) {
+            throw std::runtime_error("Failed to initialize io_uring");
+        }
+        ioInitialised = true;
     }
+}
+
+void DiskBackedState::loadChunk(size_t chunkIndex, std::vector<qcomp>& buffer) const {
+    if (chunkIndex >= numChunks)
+        throw std::runtime_error("loadChunk: chunkIndex out of bounds");
+
+    ensureIoUringInitialised(); 
+
+    const std::string& path = chunkPaths[chunkIndex];
+    size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
+
+    void* rawBuf;
+    if (posix_memalign(&rawBuf, 4096, chunkBytes) != 0)
+        throw std::runtime_error("loadChunk: posix_memalign failed");
+
+    int fd = open(path.c_str(), O_RDONLY | O_DIRECT);
+    if (fd < 0) {
+        free(rawBuf);
+        throw std::runtime_error("loadChunk: open failed " + path);
+    }
+
+    io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+    io_uring_prep_read(sqe, fd, rawBuf, chunkBytes, 0);
+    io_uring_submit(&ring);
+
+    io_uring_cqe* cqe;
+    io_uring_wait_cqe(&ring, &cqe);
+    if (cqe->res < 0) {
+        std::string err = "loadChunk: I/O error: ";
+        err += strerror(-cqe->res);
+        io_uring_cqe_seen(&ring, cqe);
+        close(fd); free(rawBuf);
+        throw std::runtime_error(err);
+    }
+    io_uring_cqe_seen(&ring, cqe);
 
     buffer.resize(ampsPerChunk);
-    const std::string& path = chunkPaths[chunkIndex];
+    std::memcpy(buffer.data(), rawBuf, chunkBytes);
 
-    FILE* f = fopen(path.c_str(), "rb");
-    if (!f) {
-        throw std::runtime_error("loadChunk: failed to open file " + path);
-    }
-
-    size_t read = fread(buffer.data(), sizeof(qcomp), ampsPerChunk, f);
-    fclose(f);
-
-    if (read != ampsPerChunk) {
-        throw std::runtime_error("loadChunk: read incomplete");
-    }
+    close(fd);
+    free(rawBuf);
 }
+
 
 void DiskBackedState::saveChunk(size_t chunkIndex, const std::vector<qcomp>& buffer) const {
-    if (chunkIndex >= numChunks) {
+    if (chunkIndex >= numChunks)
         throw std::runtime_error("saveChunk: chunkIndex out of bounds");
-    }
 
-    if (buffer.size() != ampsPerChunk) {
-        throw std::runtime_error("saveChunk: buffer size does not match ampsPerChunk");
-    }
+    if (buffer.size() != ampsPerChunk)
+        throw std::runtime_error("saveChunk: buffer size mismatch");
+
+    ensureIoUringInitialised();
 
     const std::string& path = chunkPaths[chunkIndex];
+    size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
 
-    FILE* f = fopen(path.c_str(), "wb");
-    if (!f) {
-        throw std::runtime_error("saveChunk: failed to open file " + path);
+    void* rawBuf;
+    if (posix_memalign(&rawBuf, 4096, chunkBytes) != 0)
+        throw std::runtime_error("saveChunk: posix_memalign failed");
+
+    std::memcpy(rawBuf, buffer.data(), chunkBytes);
+
+    int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_DIRECT, 0644);
+    if (fd < 0) {
+        free(rawBuf);
+        throw std::runtime_error("saveChunk: open failed " + path);
     }
 
-    size_t written = fwrite(buffer.data(), sizeof(qcomp), ampsPerChunk, f);
-    fflush(f);
-    fclose(f);
+    io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+    io_uring_prep_write(sqe, fd, rawBuf, chunkBytes, 0);
+    io_uring_submit(&ring);
 
-    if (written != ampsPerChunk) {
-        throw std::runtime_error("saveChunk: write incomplete");
+    io_uring_cqe* cqe;
+    io_uring_wait_cqe(&ring, &cqe);
+    if (cqe->res < 0) {
+        std::string err = "saveChunk: I/O error: ";
+        err += strerror(-cqe->res);
+        io_uring_cqe_seen(&ring, cqe);
+        close(fd); free(rawBuf);
+        throw std::runtime_error(err);
     }
+    io_uring_cqe_seen(&ring, cqe);
+
+    close(fd);
+    free(rawBuf);
 }
+
 
 void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndices, std::vector<qcomp>& buffer) const {
     if (chunkIndices.size() != chunksPerBlock) {
@@ -159,6 +208,9 @@ void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndic
 
 DiskBackedState::~DiskBackedState() {
     deleteAllChunkFiles();
+    if (ioInitialized) {
+        io_uring_queue_exit(&ring);
+    }
 }
 
 void DiskBackedState::deleteAllChunkFiles() {
