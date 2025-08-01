@@ -189,6 +189,16 @@ void DiskBackedState::diskBacked_initRandomPureState() {
     }
 }
 
+void DiskBackedState::diskBacked_initZeroState() {
+    for (int chunk = 0; chunk < numChunks; ++chunk) {
+        std::vector<qcomp> buffer(ampsPerChunk, 0.0);
+        if (chunk == 0) {
+            buffer[0] = 1.0;
+        }
+        saveChunk(chunk, buffer);
+    }
+}
+
 qreal DiskBackedState::diskBacked_calcTotalProbability() const {
     qreal total = 0.0;
     
@@ -238,8 +248,6 @@ int DiskBackedState::diskBacked_applyQubitMeasurement(int qubit) {
             qreal chunkProb = calcTotalProb(tempQureg);
             probs[outcome] += chunkProb;
             
-            // Commenting out destroyQureg call as it seems to be causing issues
-            // destroyQureg(tempQureg);
         }
     }
     

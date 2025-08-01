@@ -53,6 +53,15 @@ void GateScheduler::applyGateOpToQureg(const GateOp& op, Qureg& qureg) {
         case GateType::Swap:
             applySwap(qureg, op.target, op.control);
             break;
+        case GateType::PauliX:
+            applyPauliX(qureg, op.target);
+            break;
+        case GateType::PauliY:
+            applyPauliY(qureg, op.target);
+            break;
+        case GateType::PauliZ:
+            applyPauliZ(qureg, op.target);
+            break;
         // ... add more gates as needed
         default:
             std::cerr << "[GateScheduler] Unknown gate type in dispatcher!\n";

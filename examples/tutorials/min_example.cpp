@@ -40,20 +40,49 @@ int main() {
     reportQuESTEnv();
 
     // Parameters
-    std::vector<int> qubitSizes = {30,31,32,33,34,35,36};
-    std::vector<int> numBlocksList = {4,4,8,16,16,32,64};
-    std::vector<int> chunksPerBlockList = {4,4,8,16,16,32,64};
+    std::vector<int> qubitSizes = {26,27,28,29};
+    std::vector<int> numBlocksList = {4,8,16,32};
+    std::vector<int> chunksPerBlockList = {4,8,16,32};
     const int numRuns = 1; 
     std::vector<std::string> diskRoots = {
-        "/quantum/quantum_chunks0",
-        "/quantum/quantum_chunks1",
-        "/quantum_chunks2",
-        "/home/s2767757/quantum_chunks3"
+        "C:/quantum_chunks0",
+        "D:/quantum_chunks1"
     };
     
     std::vector<RunData> runData;
     
+    // Find available log file name
+    std::string logFileName;
+    int logIndex = 0;
+    do {
+        logFileName = "logs" + std::to_string(logIndex) + ".txt";
+        logIndex++;
+    } while (std::filesystem::exists(logFileName));
+    
+    // Initialize log file with header
+    std::ofstream logFile(logFileName);
+    if (logFile.is_open()) {
+        logFile << "QuEST Disk-Backed State Performance Log" << std::endl;
+        logFile << "======================================" << std::endl;
+        logFile << "Parameters: numRuns=" << numRuns << " per qubit size" << std::endl;
+        logFile << "Qubit sizes tested: ";
+        for (size_t i = 0; i < qubitSizes.size(); ++i) {
+            logFile << qubitSizes[i];
+            if (i < qubitSizes.size() - 1) logFile << ", ";
+        }
+        logFile << std::endl;
+        logFile << std::endl;
+        
+        logFile << "Qubits | Blocks | Chunks | Run | Elapsed(s) | Measure(s) | Total(s) | InitialProb | FinalProb | ProbCheck | Outcome" << std::endl;
+        logFile << "-------|--------|--------|-----|------------|------------|----------|-------------|-----------|-----------|---------" << std::endl;
+        logFile.flush(); // Ensure header is written immediately
+    } else {
+        std::cerr << "Failed to open log file: " << logFileName << std::endl;
+        return 1;
+    }
+    
     std::cout << "Running " << numRuns << " iterations for each qubit size..." << std::endl;
+    std::cout << "Results will be saved to: " << logFileName << std::endl;
     
     for (size_t qubitIndex = 0; qubitIndex < qubitSizes.size(); ++qubitIndex) {
         int numQubits = qubitSizes[qubitIndex];
@@ -129,35 +158,8 @@ int main() {
             std::cout << "  Elapsed: " << data.elapsed << "s, Measure: " << data.measureElapsed 
                       << "s, Total: " << data.totalElapsed << "s, Prob: " << data.finalProb 
                       << ", Outcome: " << data.measurementOutcome << std::endl;
-        }
-    }
-    
-    // Find available log file name
-    std::string logFileName;
-    int logIndex = 0;
-    do {
-        logFileName = "logs" + std::to_string(logIndex) + ".txt";
-        logIndex++;
-    } while (std::filesystem::exists(logFileName));
-    
-    // Write results to log file
-    std::ofstream logFile(logFileName);
-    if (logFile.is_open()) {
-        logFile << "QuEST Disk-Backed State Performance Log" << std::endl;
-        logFile << "======================================" << std::endl;
-        logFile << "Parameters: numRuns=" << numRuns << " per qubit size" << std::endl;
-        logFile << "Qubit sizes tested: ";
-        for (size_t i = 0; i < qubitSizes.size(); ++i) {
-            logFile << qubitSizes[i];
-            if (i < qubitSizes.size() - 1) logFile << ", ";
-        }
-        logFile << std::endl;
-        logFile << std::endl;
-        
-        logFile << "Qubits | Blocks | Chunks | Run | Elapsed(s) | Measure(s) | Total(s) | InitialProb | FinalProb | ProbCheck | Outcome" << std::endl;
-        logFile << "-------|--------|--------|-----|------------|------------|----------|-------------|-----------|-----------|---------" << std::endl;
-        
-        for (const auto& data : runData) {
+            
+            // Write this run's data to log file immediately
             logFile << std::setw(6) << data.numQubits << " | "
                     << std::setw(6) << data.numBlocks << " | "
                     << std::setw(6) << data.chunksPerBlock << " | "
@@ -169,48 +171,47 @@ int main() {
                     << std::setw(9) << data.finalProb << " | "
                     << std::setw(9) << (data.probCheckPassed ? "PASS" : "FAIL") << " | "
                     << std::setw(7) << data.measurementOutcome << std::endl;
+            logFile.flush(); // Ensure data is written immediately
         }
-        
-        // Calculate summary statistics by qubit size
-        logFile << std::endl;
-        logFile << "Summary Statistics by Qubit Size:" << std::endl;
-        logFile << "=================================" << std::endl;
-        
-        for (int qubits : qubitSizes) {
-            double avgElapsed = 0.0, avgMeasure = 0.0, avgTotal = 0.0;
-            int probPassCount = 0;
-            int count = 0;
-            
-            for (const auto& data : runData) {
-                if (data.numQubits == qubits) {
-                    avgElapsed += data.elapsed;
-                    avgMeasure += data.measureElapsed;
-                    avgTotal += data.totalElapsed;
-                    if (data.probCheckPassed) probPassCount++;
-                    count++;
-                }
-            }
-            
-            if (count > 0) {
-                avgElapsed /= count;
-                avgMeasure /= count;
-                avgTotal /= count;
-                
-                logFile << "Qubits " << qubits << ":" << std::endl;
-                logFile << "  Average Elapsed Time: " << std::fixed << std::setprecision(6) << avgElapsed << "s" << std::endl;
-                logFile << "  Average Measure Time: " << avgMeasure << "s" << std::endl;
-                logFile << "  Average Total Time: " << avgTotal << "s" << std::endl;
-                logFile << "  Probability Check Pass Rate: " << probPassCount << "/" << count 
-                        << " (" << (100.0 * probPassCount / count) << "%)" << std::endl;
-                logFile << std::endl;
-            }
-        }
-        
-        logFile.close();
-        std::cout << "Results saved to: " << logFileName << std::endl;
-    } else {
-        std::cerr << "Failed to open log file: " << logFileName << std::endl;
     }
+    
+    // Calculate and write summary statistics
+    logFile << std::endl;
+    logFile << "Summary Statistics by Qubit Size:" << std::endl;
+    logFile << "=================================" << std::endl;
+    
+    for (int qubits : qubitSizes) {
+        double avgElapsed = 0.0, avgMeasure = 0.0, avgTotal = 0.0;
+        int probPassCount = 0;
+        int count = 0;
+        
+        for (const auto& data : runData) {
+            if (data.numQubits == qubits) {
+                avgElapsed += data.elapsed;
+                avgMeasure += data.measureElapsed;
+                avgTotal += data.totalElapsed;
+                if (data.probCheckPassed) probPassCount++;
+                count++;
+            }
+        }
+        
+        if (count > 0) {
+            avgElapsed /= count;
+            avgMeasure /= count;
+            avgTotal /= count;
+            
+            logFile << "Qubits " << qubits << ":" << std::endl;
+            logFile << "  Average Elapsed Time: " << std::fixed << std::setprecision(6) << avgElapsed << "s" << std::endl;
+            logFile << "  Average Measure Time: " << avgMeasure << "s" << std::endl;
+            logFile << "  Average Total Time: " << avgTotal << "s" << std::endl;
+            logFile << "  Probability Check Pass Rate: " << probPassCount << "/" << count 
+                    << " (" << (100.0 * probPassCount / count) << "%)" << std::endl;
+            logFile << std::endl;
+        }
+    }
+    
+    logFile.close();
+    std::cout << "Final results saved to: " << logFileName << std::endl;
     
     finalizeQuESTEnv();
     return 0;

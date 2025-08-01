@@ -1,0 +1,38 @@
+QuEST Disk-Backed State Performance Log
+======================================
+Parameters: numRuns=1 per qubit size
+Qubit sizes tested: 26, 27, 28, 29
+
+Qubits | Blocks | Chunks | Run | Elapsed(s) | Measure(s) | Total(s) | InitialProb | FinalProb | ProbCheck | Outcome
+-------|--------|--------|-----|------------|------------|----------|-------------|-----------|-----------|---------
+    26 |      1 |      1 |   1 |  26.747624 |   3.350570 | 30.098194 |    1.000000 |  1.000000 |      PASS |       1
+    27 |      2 |      2 |   1 |  87.494898 |   7.813121 | 95.308018 |    1.000000 |  1.000000 |      PASS |       1
+    28 |      4 |      4 |   1 | 257.932871 |  21.392256 | 279.325127 |    1.000000 |  1.000000 |      PASS |       0
+    29 |      8 |      8 |   1 | 610.510943 |  60.939073 | 671.450016 |    1.000000 |  1.000000 |      PASS |       0
+
+Summary Statistics by Qubit Size:
+=================================
+Qubits 26:
+  Average Elapsed Time: 26.747624s
+  Average Measure Time: 3.350570s
+  Average Total Time: 30.098194s
+  Probability Check Pass Rate: 1/1 (100.000000%)
+
+Qubits 27:
+  Average Elapsed Time: 87.494898s
+  Average Measure Time: 7.813121s
+  Average Total Time: 95.308018s
+  Probability Check Pass Rate: 1/1 (100.000000%)
+
+Qubits 28:
+  Average Elapsed Time: 257.932871s
+  Average Measure Time: 21.392256s
+  Average Total Time: 279.325127s
+  Probability Check Pass Rate: 1/1 (100.000000%)
+
+Qubits 29:
+  Average Elapsed Time: 610.510943s
+  Average Measure Time: 60.939073s
+  Average Total Time: 671.450016s
+  Probability Check Pass Rate: 1/1 (100.000000%)
+

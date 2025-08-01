@@ -30,6 +30,7 @@ public:
     double computeTotalProbability() const;
     qreal diskBacked_calcTotalProbability() const;
     int diskBacked_applyQubitMeasurement(int qubit);
+    void diskBacked_initZeroState();
     ~DiskBackedState();
     PermutationTracker& getPermutationTracker(); 
 

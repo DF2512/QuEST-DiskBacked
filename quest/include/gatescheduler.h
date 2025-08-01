@@ -103,6 +103,18 @@ public:
     void addSwap(int qubitA, int qubitB) {
         schedule.push_back(GateOp{GateType::Swap, qubitA, qubitB, 0.0, 0});
     }
+    // Add a Pauli-X gate
+    void addPauliX(int target) {
+        schedule.push_back(GateOp{GateType::PauliX, target, -1, 0.0, 0});
+    }
+    // Add a Pauli-Y gate
+    void addPauliY(int target) {
+        schedule.push_back(GateOp{GateType::PauliY, target, -1, 0.0, 0});
+    }
+    // Add a Pauli-Z gate
+    void addPauliZ(int target) {
+        schedule.push_back(GateOp{GateType::PauliZ, target, -1, 0.0, 0});
+    }
     // Add a full QFT
     void addFullQFT(int numQubits) {
         // Apply QFT to all qubits in reverse order
@@ -121,7 +133,7 @@ public:
     }
     // Add a Quantum Supremacy Circuit
     void addQSC(int numQubits, int depth); 
-    // ... Add more gate types as needed
+    
 
     // Get the full schedule
     const std::vector<GateOp>& getSchedule() const { return schedule; }

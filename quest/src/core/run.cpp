@@ -20,7 +20,7 @@
 std::mutex memMtx;
 std::condition_variable memCv;
 int inFlightBlocks = 0;
-constexpr int maxBlocksInMemory = 3;
+constexpr int maxBlocksInMemory = 16;
 
 // Helper: Given a logical qubit index, find its physical position in the permutation
 static int logicalToPhysical(const std::vector<int>& permutation, int logicalQubit) {
@@ -75,12 +75,6 @@ void applySubCircuitToBlockDebug(const SubCircuit& sub, std::vector<qcomp>& buff
         mappedGate.target = logicalToPhysical(sub.permutation, gate.target);
         if (gate.control != -1)
             mappedGate.control = logicalToPhysical(sub.permutation, gate.control);
-        // Print a concise summary before applying the gate
-        std::cout << "[Debug] About to apply: type=" << static_cast<int>(gate.type)
-                  << ", logical target=" << gate.target << ", mapped target=" << mappedGate.target
-                  << ", logical control=" << gate.control << ", mapped control=" << mappedGate.control
-                  << ", angle=" << gate.angle << ", k=" << gate.k
-                  << " to Qureg of size " << qubitsPerBlock << " (block-local buffer)\n";
         // Check if mapped target/control are within block
         bool targetInBlock = mappedGate.target >= 0 && mappedGate.target < qubitsPerBlock;
         bool controlInBlock = (gate.control == -1) || (mappedGate.control >= 0 && mappedGate.control < qubitsPerBlock);
@@ -173,121 +167,104 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
             std::cout << p << "->" << subcircuits[i].permutation[p] << " ";
         }
         std::cout << "\n";
+
         // The subcircuit's permutation must be used to map logical to physical qubits when applying gates.
         tracker.currentPermutation = subcircuits[i].permutation;
-
         std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
 
-        // Timing vectors
-        std::vector<double> readerTimes(numBlocks, 0.0);
-        std::vector<double> processorTimes(numBlocks, 0.0);
-        std::vector<double> writerTimes(numBlocks, 0.0);
+        // Determine if we can skip the heavy I/O block
+        bool noGates = subcircuits[i].gates.empty();
+        bool noSwap2 = (i == 0) || transitions[i-1].swap2.empty();
+        bool noSwap1 = (i >= transitions.size()) || transitions[i].swap1.empty();
 
-        // Set up triple buffer queues
-        ThreadSafeQueue<BlockData> readQueue(maxBlocksInMemory);
-        ThreadSafeQueue<BlockData> processQueue(maxBlocksInMemory);
+        if (!(noGates && noSwap1 && noSwap2)) {
+            // Timing vectors
+            std::vector<double> readerTimes(numBlocks, 0.0);
+            std::vector<double> processorTimes(numBlocks, 0.0);
+            std::vector<double> writerTimes(numBlocks, 0.0);
 
-        // --- Reader Thread ---
-        std::thread reader([&]() {
-            for (int blockIdx = 0; blockIdx < numBlocks; ++blockIdx) {
-                auto t0 = std::chrono::high_resolution_clock::now();
-                // Memory management
-                std::unique_lock<std::mutex> lock(memMtx);
-                memCv.wait(lock, []() { return inFlightBlocks < maxBlocksInMemory; });
-                inFlightBlocks++;
+            // Set up triple buffer queues
+            ThreadSafeQueue<BlockData> readQueue(maxBlocksInMemory);
+            ThreadSafeQueue<BlockData> processQueue(maxBlocksInMemory);
 
-                BlockData block;
-                block.blockIdx = blockIdx;
-                block.chunkIndices = blockChunkMapping[blockIdx];
-                state.loadBlock(block.blockIdx, block.chunkIndices, block.buffer);
+            // --- Reader Thread ---
+            std::thread reader([&]() {
+                for (int blockIdx = 0; blockIdx < numBlocks; ++blockIdx) {
+                    auto t0 = std::chrono::high_resolution_clock::now();
+                    // Memory management
+                    std::unique_lock<std::mutex> lock(memMtx);
+                    memCv.wait(lock, []() { return inFlightBlocks < maxBlocksInMemory; });
+                    inFlightBlocks++;
 
-                // Apply swap2 if not the first subcircuit
-                if (i > 0 && !transitions[i-1].swap2.empty()) {
-                    //std::cout << "[Reader] Applying swap2 to block " << blockIdx << "\n";
-                    SubCircuit swap2;
-                    swap2.gates = scheduleSwaps(transitions[i-1].swap2);
-                    // Set permutation to identity for the block
-                    swap2.permutation.resize(qubitsPerBlock);
-                    std::iota(swap2.permutation.begin(), swap2.permutation.end(), 0);
-                    if (blockIdx == 0)
-                        applySubCircuitToBlockDebug(swap2, block.buffer, qubitsPerBlock);
-                    else
+                    BlockData block;
+                    block.blockIdx = blockIdx;
+                    block.chunkIndices = blockChunkMapping[blockIdx];
+                    state.loadBlock(block.blockIdx, block.chunkIndices, block.buffer);
+
+                    // Apply swap2 if not the first subcircuit
+                    if (i > 0 && !transitions[i-1].swap2.empty()) {
+                        SubCircuit swap2;
+                        swap2.gates = scheduleSwaps(transitions[i-1].swap2);
+                        swap2.permutation.resize(qubitsPerBlock);
+                        std::iota(swap2.permutation.begin(), swap2.permutation.end(), 0);
                         applySubCircuitToBlock(swap2, block.buffer, qubitsPerBlock);
+                    }
+                    auto t1 = std::chrono::high_resolution_clock::now();
+                    readerTimes[blockIdx] = std::chrono::duration<double>(t1 - t0).count();
+                    readQueue.push(std::move(block));
                 }
-                auto t1 = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> elapsed = t1 - t0;
-                readerTimes[blockIdx] = elapsed.count();
-                readQueue.push(std::move(block));
-            }
-            readQueue.setFinished();
-        });
+                readQueue.setFinished();
+            });
 
-        // --- Processor Thread ---
-        std::thread processor([&]() {
-            BlockData block;
-            while (readQueue.pop(block)) {
-                auto t0 = std::chrono::high_resolution_clock::now();
-                if (block.blockIdx == 0)
-                    applySubCircuitToBlockDebug(subcircuits[i], block.buffer, qubitsPerBlock);
-                else
-                    applySubCircuitToBlock(subcircuits[i], block.buffer, qubitsPerBlock);
-                auto t1 = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> elapsed = t1 - t0;
-                processorTimes[block.blockIdx] = elapsed.count();
-                processQueue.push(std::move(block));
-            }
-            processQueue.setFinished();
-        });
-
-        // --- Writer Thread ---
-        std::thread writer([&]() {
-            BlockData block;
-            while (processQueue.pop(block)) {
-                auto t0 = std::chrono::high_resolution_clock::now();
-                // Apply swap1 if not the last subcircuit
-                if (i < transitions.size() && !transitions[i].swap1.empty()) {
-                    SubCircuit swap1;
-                    swap1.gates = scheduleSwaps(transitions[i].swap1);
-                    // Set permutation to identity for the block
-                    swap1.permutation.resize(qubitsPerBlock);
-                    std::iota(swap1.permutation.begin(), swap1.permutation.end(), 0);
+            // --- Processor Thread ---
+            std::thread processor([&]() {
+                BlockData block;
+                while (readQueue.pop(block)) {
+                    auto t0 = std::chrono::high_resolution_clock::now();
                     if (block.blockIdx == 0)
-                        applySubCircuitToBlockDebug(swap1, block.buffer, qubitsPerBlock);
+                        applySubCircuitToBlockDebug(subcircuits[i], block.buffer, qubitsPerBlock);
                     else
-                        applySubCircuitToBlock(swap1, block.buffer, qubitsPerBlock);
+                        applySubCircuitToBlock(subcircuits[i], block.buffer, qubitsPerBlock);
+                    auto t1 = std::chrono::high_resolution_clock::now();
+                    processorTimes[block.blockIdx] = std::chrono::duration<double>(t1 - t0).count();
+                    processQueue.push(std::move(block));
                 }
-                state.saveBlock(block.blockIdx, block.chunkIndices, block.buffer);
+                processQueue.setFinished();
+            });
 
-                // Memory management
-                {
-                    std::lock_guard<std::mutex> lock(memMtx);
-                    inFlightBlocks--;
+            // --- Writer Thread ---
+            std::thread writer([&]() {
+                BlockData block;
+                while (processQueue.pop(block)) {
+                    auto t0 = std::chrono::high_resolution_clock::now();
+                    if (i < transitions.size() && !transitions[i].swap1.empty()) {
+                        SubCircuit swap1;
+                        swap1.gates = scheduleSwaps(transitions[i].swap1);
+                        swap1.permutation.resize(qubitsPerBlock);
+                        std::iota(swap1.permutation.begin(), swap1.permutation.end(), 0);
+                        if (block.blockIdx == 0)
+                            applySubCircuitToBlockDebug(swap1, block.buffer, qubitsPerBlock);
+                        else
+                            applySubCircuitToBlock(swap1, block.buffer, qubitsPerBlock);
+                    }
+                    state.saveBlock(block.blockIdx, block.chunkIndices, block.buffer);
+
+                    // Memory management
+                    {
+                        std::lock_guard<std::mutex> lock(memMtx);
+                        inFlightBlocks--;
+                    }
+                    memCv.notify_one();
+                    auto t1 = std::chrono::high_resolution_clock::now();
+                    writerTimes[block.blockIdx] = std::chrono::duration<double>(t1 - t0).count();
                 }
-                memCv.notify_one();
-                auto t1 = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> elapsed = t1 - t0;
-                writerTimes[block.blockIdx] = elapsed.count();
-            }
-        });
+            });
 
-        // Join threads
-        reader.join();
-        processor.join();
-        writer.join();
-
-        // Print per-block and average times
-        auto printTimes = [](const std::string& label, const std::vector<double>& times) {
-            double sum = 0.0;
-            std::cout << "[Timing] " << label << " times per block:\n";
-            for (size_t i = 0; i < times.size(); ++i) {
-                std::cout << "  Block " << i << ": " << times[i] << " s\n";
-                sum += times[i];
-            }
-            std::cout << "  Average: " << (sum / times.size()) << " s\n";
-        };
-        //printTimes("Reader", readerTimes);
-        //printTimes("Processor", processorTimes);
-        //printTimes("Writer", writerTimes);
+            // Join threads
+            reader.join();
+            processor.join();
+            writer.join();
+        }
 
         // --- After all blocks processed, update chunkMap if not last subcircuit ---
         if (i < transitions.size()) {
@@ -306,4 +283,5 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
         } 
     } 
 }
+
 
