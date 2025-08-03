@@ -11,7 +11,7 @@
 class DiskBackedState {
 public:
     DiskBackedState(int numQubits, int numBlocks, int chunksPerBlock,
-                    const std::vector<std::string>& diskRoots);
+                    const std::vector<std::string>& diskRoots, int maxBlocksInMemory);
 
     int getNumQubits() const;
     int getNumBlocks() const;
@@ -19,15 +19,17 @@ public:
     int getNumQubitsPerChunk() const;
     int getMaxPermutableQubits() const;
     int getChunksPerBlock() const;
+    int getMaxBlocksInMemory() const;
     size_t getNumAmplitudes() const;
     size_t getNumChunks() const;
     size_t getAmpsPerChunk() const;
-    void loadChunk(size_t chunkIndex, std::vector<qcomp>& buffer) const;
-    void saveChunk(size_t chunkIndex, const std::vector<qcomp>& buffer) const;
-    void loadBlock(int blockIdx, const std::vector<int>& chunkIndices, std::vector<qcomp>& buffer) const;
-    void saveBlock(int blockIdx, const std::vector<int>& chunkIndices, const std::vector<qcomp>& buffer) const;
+    void loadChunk(size_t chunkIndex, void* alignedBuf, std::vector<qcomp>& out) const;
+    void saveChunk(size_t chunkIndex, void* alignedBuf, const std::vector<qcomp>& in) const;
+    void loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, std::vector<qcomp>& buffer) const;
+    void saveBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, const std::vector<qcomp>& buffer) const;
     void diskBacked_initRandomPureState();
     void deleteAllChunkFiles();
+    void* getAlignedBuffer(int idx) const;
     double computeTotalProbability() const;
     qreal diskBacked_calcTotalProbability() const;
     int diskBacked_applyQubitMeasurement(int qubit);
@@ -47,7 +49,9 @@ private:
     size_t ampsPerChunk; // number of amplitudes per chunk
     mutable io_uring ring;
     mutable bool ioInitialised = false;
+    mutable std::vector<void*> alignedBufferPool;
     void ensureIoUringInitialised() const;
+    const int maxBlocksInMemory; // maximum number of blocks that can be in memory at once
 
     std::vector<std::string> diskRoots;
     std::vector<std::string> chunkPaths;

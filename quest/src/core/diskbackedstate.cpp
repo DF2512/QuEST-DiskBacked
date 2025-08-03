@@ -12,11 +12,12 @@
 #include "quest/src/core/randomiser.hpp"
 
 DiskBackedState::DiskBackedState(int numQubits_, int numBlocks_, int chunksPerBlock_,
-                                 const std::vector<std::string>& diskRoots_)
+                                 const std::vector<std::string>& diskRoots_, int maxBlocksInMemory_)
     : numQubits(numQubits_),
       numBlocks(numBlocks_),
       chunksPerBlock(chunksPerBlock_),
       diskRoots(diskRoots_),
+      maxBlocksInMemory(maxBlocksInMemory_),
       permTracker(numQubits_, numBlocks_, chunksPerBlock_)
 {
     numAmplitudes = 1ULL << numQubits;
@@ -31,6 +32,18 @@ DiskBackedState::DiskBackedState(int numQubits_, int numBlocks_, int chunksPerBl
     }
 
     generateChunkPaths();
+
+    const size_t totalBytes = ampsPerChunk * chunksPerBlock * sizeof(qcomp);
+    for (int i = 0; i < maxBlocksInMemory; ++i) {
+        void* buf = nullptr;
+        if (posix_memalign(&buf, 4096, totalBytes) != 0)
+            throw std::runtime_error("Buffer pool allocation failed");
+        alignedBufferPool.push_back(buf);
+    }
+}
+
+void* DiskBackedState::getAlignedBuffer(int idx) const {
+    return alignedBufferPool.at(idx);
 }
 
 void DiskBackedState::generateChunkPaths() {
@@ -53,62 +66,71 @@ int DiskBackedState::getNumQubitsPerBlock() const { return numQubitsPerBlock; }
 int DiskBackedState::getNumQubitsPerChunk() const { return numQubitsPerChunk; }
 int DiskBackedState::getNumBlocks() const { return numBlocks; }
 int DiskBackedState::getNumQubits() const { return numQubits; }
+int DiskBackedState::getMaxBlocksInMemory() const { return maxBlocksInMemory; }
 size_t DiskBackedState::getNumAmplitudes() const { return numAmplitudes; }
 size_t DiskBackedState::getNumChunks() const { return numChunks; }
 size_t DiskBackedState::getAmpsPerChunk() const { return ampsPerChunk; }
 
 void DiskBackedState::ensureIoUringInitialised() const {
     if (!ioInitialised) {
-        if (io_uring_queue_init(32, &ring, 0) < 0) {
+        // Increase ring size significantly to handle more concurrent operations
+        if (io_uring_queue_init(512, &ring, 0) < 0) {
             throw std::runtime_error("Failed to initialize io_uring");
         }
         ioInitialised = true;
     }
 }
 
-void DiskBackedState::loadChunk(size_t chunkIndex, std::vector<qcomp>& buffer) const {
+void DiskBackedState::loadChunk(size_t chunkIndex, void* alignedBuf, std::vector<qcomp>& buffer) const {
     if (chunkIndex >= numChunks)
         throw std::runtime_error("loadChunk: chunkIndex out of bounds");
 
-    ensureIoUringInitialised(); 
+    ensureIoUringInitialised();
 
     const std::string& path = chunkPaths[chunkIndex];
     size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
 
-    void* rawBuf;
-    if (posix_memalign(&rawBuf, 4096, chunkBytes) != 0)
-        throw std::runtime_error("loadChunk: posix_memalign failed");
-
-    int fd = open(path.c_str(), O_RDONLY | O_DIRECT);
+    int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
-        free(rawBuf);
         throw std::runtime_error("loadChunk: open failed " + path);
     }
 
     io_uring_sqe* sqe = io_uring_get_sqe(&ring);
-    io_uring_prep_read(sqe, fd, rawBuf, chunkBytes, 0);
-    io_uring_submit(&ring);
+    if (!sqe) {
+        close(fd);
+        throw std::runtime_error("loadChunk: failed to get SQE");
+    }
+
+    io_uring_prep_read(sqe, fd, alignedBuf, chunkBytes, 0);
+    io_uring_sqe_set_data(sqe, nullptr);
+
+    if (io_uring_submit_and_wait(&ring, 1) < 0) {
+        close(fd);
+        throw std::runtime_error("loadChunk: failed to submit_and_wait");
+    }
 
     io_uring_cqe* cqe;
-    io_uring_wait_cqe(&ring, &cqe);
-    if (cqe->res < 0) {
-        std::string err = "loadChunk: I/O error: ";
-        err += strerror(-cqe->res);
+    if (io_uring_wait_cqe(&ring, &cqe) < 0) {
+        close(fd);
+        throw std::runtime_error("loadChunk: failed to wait for CQE");
+    }
+
+    if (cqe->res != (int)chunkBytes) {
+        std::string err = "loadChunk: I/O error: expected " + std::to_string(chunkBytes) + ", got " + std::to_string(cqe->res);
         io_uring_cqe_seen(&ring, cqe);
-        close(fd); free(rawBuf);
+        close(fd);
         throw std::runtime_error(err);
     }
+
     io_uring_cqe_seen(&ring, cqe);
+    close(fd);
 
     buffer.resize(ampsPerChunk);
-    std::memcpy(buffer.data(), rawBuf, chunkBytes);
-
-    close(fd);
-    free(rawBuf);
+    std::memcpy(buffer.data(), alignedBuf, chunkBytes);
 }
 
 
-void DiskBackedState::saveChunk(size_t chunkIndex, const std::vector<qcomp>& buffer) const {
+void DiskBackedState::saveChunk(size_t chunkIndex, void* alignedBuf, const std::vector<qcomp>& buffer) const {
     if (chunkIndex >= numChunks)
         throw std::runtime_error("saveChunk: chunkIndex out of bounds");
 
@@ -120,38 +142,45 @@ void DiskBackedState::saveChunk(size_t chunkIndex, const std::vector<qcomp>& buf
     const std::string& path = chunkPaths[chunkIndex];
     size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
 
-    void* rawBuf;
-    if (posix_memalign(&rawBuf, 4096, chunkBytes) != 0)
-        throw std::runtime_error("saveChunk: posix_memalign failed");
+    std::memcpy(alignedBuf, buffer.data(), chunkBytes);
 
-    std::memcpy(rawBuf, buffer.data(), chunkBytes);
-
-    int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_DIRECT, 0644);
+    int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {
-        free(rawBuf);
         throw std::runtime_error("saveChunk: open failed " + path);
     }
 
     io_uring_sqe* sqe = io_uring_get_sqe(&ring);
-    io_uring_prep_write(sqe, fd, rawBuf, chunkBytes, 0);
-    io_uring_submit(&ring);
+    if (!sqe) {
+        close(fd);
+        throw std::runtime_error("saveChunk: failed to get SQE");
+    }
+
+    io_uring_prep_write(sqe, fd, alignedBuf, chunkBytes, 0);
+    io_uring_sqe_set_data(sqe, nullptr);
+
+    if (io_uring_submit_and_wait(&ring, 1) < 0) {
+        close(fd);
+        throw std::runtime_error("saveChunk: failed to submit_and_wait");
+    }
 
     io_uring_cqe* cqe;
-    io_uring_wait_cqe(&ring, &cqe);
-    if (cqe->res < 0) {
-        std::string err = "saveChunk: I/O error: ";
-        err += strerror(-cqe->res);
+    if (io_uring_wait_cqe(&ring, &cqe) < 0) {
+        close(fd);
+        throw std::runtime_error("saveChunk: failed to wait for CQE");
+    }
+
+    if (cqe->res != (int)chunkBytes) {
+        std::string err = "saveChunk: I/O error: expected " + std::to_string(chunkBytes) + ", got " + std::to_string(cqe->res);
         io_uring_cqe_seen(&ring, cqe);
-        close(fd); free(rawBuf);
+        close(fd);
         throw std::runtime_error(err);
     }
-    io_uring_cqe_seen(&ring, cqe);
 
+    io_uring_cqe_seen(&ring, cqe);
     close(fd);
-    free(rawBuf);
 }
 
-
+/*
 void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndices, std::vector<qcomp>& buffer) const {
     if (chunkIndices.size() != chunksPerBlock) {
         throw std::runtime_error("loadBlock: chunkIndices size mismatch");
@@ -176,7 +205,66 @@ void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndic
     //for (int c : chunkIndices) std::cout << c << " ";
     //std::cout << ")\n";
 }
+*/
+void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, std::vector<qcomp>& buffer) const {
+    if (chunkIndices.size() != chunksPerBlock) {
+        throw std::runtime_error("loadBlock: chunkIndices size mismatch");
+    }
 
+    ensureIoUringInitialised();
+
+    const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
+    const size_t totalBytes = chunkBytes * chunksPerBlock;
+
+    std::vector<int> fds(chunksPerBlock);
+    for (size_t i = 0; i < chunksPerBlock; ++i) {
+        const std::string& path = chunkPaths[chunkIndices[i]];
+        int fd = open(path.c_str(), O_RDONLY);
+        if (fd < 0) {
+            throw std::runtime_error("loadBlock: failed to open file: " + path);
+        }
+        fds[i] = fd;
+    }
+
+    for (size_t i = 0; i < chunksPerBlock; ++i) {
+        io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+        if (!sqe) {
+            for (int fd : fds) close(fd);
+            throw std::runtime_error("loadBlock: failed to get SQE");
+        }
+
+        void* chunkBuf = static_cast<char*>(alignedBuf) + i * chunkBytes;
+        io_uring_prep_read(sqe, fds[i], chunkBuf, chunkBytes, 0);
+        io_uring_sqe_set_data(sqe, reinterpret_cast<void*>(i));
+    }
+
+    if (io_uring_submit_and_wait(&ring, chunksPerBlock) < 0) {
+        for (int fd : fds) close(fd);
+        throw std::runtime_error("loadBlock: failed to submit_and_wait");
+    }
+
+    for (size_t i = 0; i < chunksPerBlock; ++i) {
+        io_uring_cqe* cqe;
+        if (io_uring_wait_cqe(&ring, &cqe) < 0) {
+            for (int fd : fds) close(fd);
+            throw std::runtime_error("loadBlock: failed to wait for CQE");
+        }
+        if (cqe->res != (int)chunkBytes) {
+            std::string err = "loadBlock: I/O error: expected " + std::to_string(chunkBytes) + ", got " + std::to_string(cqe->res);
+            io_uring_cqe_seen(&ring, cqe);
+            for (int fd : fds) close(fd);
+            throw std::runtime_error(err);
+        }
+        io_uring_cqe_seen(&ring, cqe);
+    }
+
+    buffer.resize(ampsPerChunk * chunksPerBlock);
+    std::memcpy(buffer.data(), alignedBuf, totalBytes);
+
+    for (int fd : fds) close(fd);
+}
+
+/*
 // saves a block of chunks to disk files
 void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndices, const std::vector<qcomp>& buffer) const {
     if (chunkIndices.size() != chunksPerBlock) {
@@ -205,12 +293,76 @@ void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndic
     //for (int c : chunkIndices) std::cout << c << " ";
     //std::cout << ")\n";
 }
+*/
+void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, const std::vector<qcomp>& buffer) const {
+    if (chunkIndices.size() != chunksPerBlock) {
+        throw std::runtime_error("saveBlock: chunkIndices size mismatch");
+    }
+
+    if (buffer.size() != ampsPerChunk * chunksPerBlock) {
+        throw std::runtime_error("saveBlock: buffer size mismatch");
+    }
+
+    ensureIoUringInitialised();
+
+    const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
+    const size_t totalBytes = chunkBytes * chunksPerBlock;
+
+    std::memcpy(alignedBuf, buffer.data(), totalBytes);
+
+    std::vector<int> fds(chunksPerBlock);
+    for (size_t i = 0; i < chunksPerBlock; ++i) {
+        const std::string& path = chunkPaths[chunkIndices[i]];
+        int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd < 0) {
+            throw std::runtime_error("saveBlock: failed to open file: " + path);
+        }
+        fds[i] = fd;
+    }
+
+    for (size_t i = 0; i < chunksPerBlock; ++i) {
+        io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+        if (!sqe) {
+            for (int fd : fds) close(fd);
+            throw std::runtime_error("saveBlock: failed to get SQE");
+        }
+
+        void* chunkBuf = static_cast<char*>(alignedBuf) + i * chunkBytes;
+        io_uring_prep_write(sqe, fds[i], chunkBuf, chunkBytes, 0);
+        io_uring_sqe_set_data(sqe, reinterpret_cast<void*>(i));
+    }
+
+    if (io_uring_submit_and_wait(&ring, chunksPerBlock) < 0) {
+        for (int fd : fds) close(fd);
+        throw std::runtime_error("saveBlock: failed to submit_and_wait");
+    }
+
+    for (size_t i = 0; i < chunksPerBlock; ++i) {
+        io_uring_cqe* cqe;
+        if (io_uring_wait_cqe(&ring, &cqe) < 0) {
+            for (int fd : fds) close(fd);
+            throw std::runtime_error("saveBlock: failed to wait for CQE");
+        }
+        if (cqe->res != (int)chunkBytes) {
+            std::string err = "saveBlock: I/O error: expected " + std::to_string(chunkBytes) + ", got " + std::to_string(cqe->res);
+            io_uring_cqe_seen(&ring, cqe);
+            for (int fd : fds) close(fd);
+            throw std::runtime_error(err);
+        }
+        io_uring_cqe_seen(&ring, cqe);
+    }
+
+    for (int fd : fds) close(fd);
+}
+
 
 DiskBackedState::~DiskBackedState() {
     deleteAllChunkFiles();
-    if (ioInitialized) {
+    if (ioInitialised) {
         io_uring_queue_exit(&ring);
     }
+    for (void* ptr : ioAlignedBuffers)
+    free(ptr);
 }
 
 void DiskBackedState::deleteAllChunkFiles() {
@@ -224,7 +376,7 @@ void DiskBackedState::diskBacked_initRandomPureState() {
     for (size_t chunk = 0; chunk < numChunks; ++chunk) {
         Qureg chunkQureg = createForcedQureg(numQubitsPerChunk);
         initRandomPureState(chunkQureg);
-        
+
         // initialising the pure states normalises to 1 for each chunk.
         // this then makes the total probability to be equal to the number
         // of chunks, so we need to renormalise each chunk to have a total
@@ -234,9 +386,10 @@ void DiskBackedState::diskBacked_initRandomPureState() {
         for (qindex i = 0; i < ampsPerChunk; ++i) {
             chunkQureg.cpuAmps[i] /= square_root;
         }
-        
+
         std::vector<qcomp> buffer(chunkQureg.cpuAmps, chunkQureg.cpuAmps + ampsPerChunk);
-        saveChunk(chunk, buffer);
+        void* alignedBuf = getAlignedBuffer(chunk % maxBlocksInMemory);
+        saveChunk(chunk, alignedBuf, buffer);
         destroyQureg(chunkQureg); 
     }
 }
@@ -247,120 +400,90 @@ void DiskBackedState::diskBacked_initZeroState() {
         if (chunk == 0) {
             buffer[0] = 1.0;
         }
-        saveChunk(chunk, buffer);
+        void* alignedBuf = getAlignedBuffer(chunk % maxBlocksInMemory);
+        saveChunk(chunk, alignedBuf, buffer);
     }
 }
 
 qreal DiskBackedState::diskBacked_calcTotalProbability() const {
     qreal total = 0.0;
-    
     for (size_t i = 0; i < numChunks; ++i) {
+        void* alignedBuf = getAlignedBuffer(i % maxBlocksInMemory);
         std::vector<qcomp> buffer;
-        loadChunk(i, buffer);
-        
+        loadChunk(i, alignedBuf, buffer);
         Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
-
-        
         total += calcTotalProb(tempQureg);
-        
     }
-
     return total;
 }
 
 int DiskBackedState::diskBacked_applyQubitMeasurement(int qubit) {
     std::vector<qreal> probs(2, 0.0);
-    
+
     if (qubit <= numQubitsPerChunk) {
-        // Qubit is within chunk size - simple case
         for (size_t i = 0; i < numChunks; ++i) {
+            void* alignedBuf = getAlignedBuffer(i % maxBlocksInMemory);
             std::vector<qcomp> buffer;
-            loadChunk(i, buffer);
+            loadChunk(i, alignedBuf, buffer);
             Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
             probs[0] += calcProbOfQubitOutcome(tempQureg, qubit, 0);
             probs[1] += calcProbOfQubitOutcome(tempQureg, qubit, 1);
         }
     } else {
-        // Qubit is outside chunk size - need to handle chunk mapping and regions
         const auto& chunkMap = permTracker.getCurrentChunkMap();
         int qubitOffset = qubit - numQubitsPerChunk - 1;
-        int regionSize = 1 << qubitOffset; // 2^(qubit - qubitsPerChunk - 1)
-        
+        int regionSize = 1 << qubitOffset;
+
         for (size_t logicalChunk = 0; logicalChunk < numChunks; ++logicalChunk) {
             size_t physicalChunk = chunkMap[logicalChunk];
+            void* alignedBuf = getAlignedBuffer(logicalChunk % maxBlocksInMemory);
             std::vector<qcomp> buffer;
-            loadChunk(physicalChunk, buffer);
+            loadChunk(physicalChunk, alignedBuf, buffer);
             Qureg tempQureg = createTempQureg(buffer, numQubitsPerChunk);
-            
-            // Determine which region this chunk belongs to
+
             int region = logicalChunk / regionSize;
-            int outcome = region % 2; // 0 or 1 based on region
-            
-            // Calculate probability for this chunk
+            int outcome = region % 2;
             qreal chunkProb = calcTotalProb(tempQureg);
             probs[outcome] += chunkProb;
-            
         }
     }
-    
-    // Determine measurement outcome
+
     int outcome = rand_getRandomSingleQubitOutcome(probs[0]);
-    
-    // Renormalize based on outcome
     qreal correctProb = probs[outcome];
-    qreal wrongProb = probs[1 - outcome];
     qreal normalizationFactor = 1.0 / std::sqrt(correctProb);
-    
-    // Apply renormalization to all chunks
-    
+
     for (size_t logicalChunk = 0; logicalChunk < numChunks; ++logicalChunk) {
         size_t physicalChunk = permTracker.getCurrentChunkMap()[logicalChunk];
+        void* alignedBuf = getAlignedBuffer(logicalChunk % maxBlocksInMemory);
         std::vector<qcomp> buffer;
-        loadChunk(physicalChunk, buffer);
-        
+        loadChunk(physicalChunk, alignedBuf, buffer);
+
         if (qubit <= numQubitsPerChunk) {
-            // For qubits within chunk size, check each amplitude
             for (size_t i = 0; i < buffer.size(); ++i) {
-                // Check if this amplitude corresponds to the wrong outcome
-                bool isWrongOutcome = false;
-                if (outcome == 0) {
-                    // Check if amplitude corresponds to qubit=1
-                    if ((i >> qubit) & 1) {
-                        isWrongOutcome = true;
-                    }
-                } else {
-                    // Check if amplitude corresponds to qubit=0
-                    if (!((i >> qubit) & 1)) {
-                        isWrongOutcome = true;
-                    }
-                }
-                
+                bool isWrongOutcome = ((i >> qubit) & 1) != outcome;
                 if (isWrongOutcome) {
-                    buffer[i] = 0.0; // Zero out wrong amplitudes
+                    buffer[i] = 0.0;
                 } else {
-                    buffer[i] *= normalizationFactor; // Renormalize correct amplitudes
+                    buffer[i] *= normalizationFactor;
                 }
             }
         } else {
-            // For qubits outside chunk size, check region
             int qubitOffset = qubit - numQubitsPerChunk - 1;
             int regionSize = 1 << qubitOffset;
             int region = logicalChunk / regionSize;
             int chunkOutcome = region % 2;
-            
+
             if (chunkOutcome != outcome) {
-                // Zero out entire chunk if it corresponds to wrong outcome
                 std::fill(buffer.begin(), buffer.end(), 0.0);
             } else {
-                // Renormalize entire chunk if it corresponds to correct outcome
                 for (auto& amp : buffer) {
                     amp *= normalizationFactor;
                 }
             }
         }
-        
-        saveChunk(physicalChunk, buffer);
+
+        saveChunk(physicalChunk, alignedBuf, buffer);
     }
-    
+
     return outcome;
 }

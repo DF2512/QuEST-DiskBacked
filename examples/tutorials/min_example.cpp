@@ -90,6 +90,7 @@ int main() {
         int numQubits = qubitSizes[qubitIndex];
         int numBlocks = numBlocksList[qubitIndex];
         int chunksPerBlock = chunksPerBlockList[qubitIndex];
+        int maxBlocksInMemory = 16; // Adjust as needed
         
         std::cout << "\n==========================================" << std::endl;
         std::cout << "Testing " << numQubits << " qubits (numBlocks=" << numBlocks 
@@ -109,7 +110,7 @@ int main() {
             auto start = std::chrono::high_resolution_clock::now();
 
             // Create disk-backed state, initialise with random pure state
-            DiskBackedState diskState(numQubits, numBlocks, chunksPerBlock, diskRoots);
+            DiskBackedState diskState(numQubits, numBlocks, chunksPerBlock, diskRoots, maxBlocksInMemory);
             diskState.diskBacked_initRandomPureState();
             //Qureg qureg = createForcedQureg(numQubits);
             //initRandomPureState(qureg);
