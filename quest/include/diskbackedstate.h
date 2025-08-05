@@ -50,6 +50,8 @@ private:
     mutable io_uring ring;
     mutable bool ioInitialised = false;
     mutable std::vector<void*> alignedBufferPool;
+    mutable std::vector<int> chunkFDs;
+    mutable bool filesRegistered = false;
     void ensureIoUringInitialised() const;
     const int maxBlocksInMemory; // maximum number of blocks that can be in memory at once
 
