@@ -54,6 +54,5 @@ public:
 struct BlockData {
     int blockIdx;
     std::vector<int> chunkIndices;
-    std::vector<qcomp> buffer;
     int bufferIndex = -1; 
 };

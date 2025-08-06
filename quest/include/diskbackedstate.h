@@ -23,10 +23,10 @@ public:
     size_t getNumAmplitudes() const;
     size_t getNumChunks() const;
     size_t getAmpsPerChunk() const;
-    void loadChunk(size_t chunkIndex, void* alignedBuf, std::vector<qcomp>& out) const;
-    void saveChunk(size_t chunkIndex, void* alignedBuf, const std::vector<qcomp>& in) const;
-    void loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, std::vector<qcomp>& buffer) const;
-    void saveBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, const std::vector<qcomp>& buffer) const;
+    void loadChunk(size_t chunkIndex, void* alignedBuf) const;
+    void saveChunk(size_t chunkIndex, void* alignedBuf) const;
+    void loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf) const;
+    void saveBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf) const;
     void diskBacked_initRandomPureState();
     void deleteAllChunkFiles();
     void* getAlignedBuffer(int idx) const;

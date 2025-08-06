@@ -3,15 +3,15 @@
 #include <vector>
 
 // Given a buffer and metadata, create a Qureg that points to it
-Qureg createTempQureg(std::vector<qcomp>& buffer, int qubits) {
+Qureg createTempQureg(void* rawBuf, int qubits) {
     QuESTEnv env = getQuESTEnv();
-    
+
     Qureg tempQureg = {};
-    tempQureg.cpuAmps = buffer.data();
+    tempQureg.cpuAmps = static_cast<qcomp*>(rawBuf);
     tempQureg.numQubits = qubits;
-    tempQureg.numAmps = buffer.size();
-    tempQureg.logNumAmps = log2(buffer.size());
-    tempQureg.numAmpsPerNode = buffer.size();
+    tempQureg.numAmps = 1ULL << qubits;
+    tempQureg.logNumAmps = qubits;
+    tempQureg.numAmpsPerNode = tempQureg.numAmps;
     tempQureg.logNumAmpsPerNode = qubits;
     tempQureg.isDensityMatrix = 0;
     tempQureg.isDistributed = env.isDistributed;

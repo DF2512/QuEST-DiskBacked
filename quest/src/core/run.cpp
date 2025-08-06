@@ -34,7 +34,9 @@ static int logicalToPhysical(const std::vector<int>& permutation, int logicalQub
 // ─────────────────────────────────────────────────────────────
 // Apply all gates from a subcircuit to a single block buffer
 // ─────────────────────────────────────────────────────────────
-void applySubCircuitToBlock(const SubCircuit& sub, std::vector<qcomp>& buffer, int qubitsPerBlock) {
+void applySubCircuitToBlock(const SubCircuit& sub, void* alignedBuf, int qubitsPerBlock) {
+    auto* amps = static_cast<qcomp*>(alignedBuf);
+    std::vector<qcomp> buffer(amps, amps + (1ULL << qubitsPerBlock));
     Qureg tempQureg = createTempQureg(buffer, qubitsPerBlock);
     for (const GateOp& gate : sub.gates) {
         GateOp mappedGate = gate;
@@ -43,9 +45,12 @@ void applySubCircuitToBlock(const SubCircuit& sub, std::vector<qcomp>& buffer, i
             mappedGate.control = logicalToPhysical(sub.permutation, gate.control);
         GateScheduler::applyGateOpToQureg(mappedGate, tempQureg);
     }
+    std::copy(buffer.begin(), buffer.end(), amps);
 }
 
-void applySubCircuitToBlockDebug(const SubCircuit& sub, std::vector<qcomp>& buffer, int qubitsPerBlock) {
+void applySubCircuitToBlockDebug(const SubCircuit& sub, void* alignedBuf, int qubitsPerBlock) {
+    auto* amps = static_cast<qcomp*>(alignedBuf);
+    std::vector<qcomp> buffer(amps, amps + (1ULL << qubitsPerBlock));
     std::cout << "[Debug] Entering applySubCircuitToBlockDebug, buffer size: " << buffer.size() << ", qubitsPerBlock: " << qubitsPerBlock << "\n";
     std::cout << "[Debug] SubCircuit has " << sub.gates.size() << " gates\n";
     if (sub.gates.empty()) {
@@ -57,7 +62,6 @@ void applySubCircuitToBlockDebug(const SubCircuit& sub, std::vector<qcomp>& buff
         std::cout << i << "->" << sub.permutation[i] << " ";
     }
     std::cout << "\n";
-    // Print the block's logical qubits (physical pos -> logical qubit)
     std::vector<int> blockLogicalQubits(qubitsPerBlock, -1);
     for (int phys = 0; phys < qubitsPerBlock; ++phys) {
         blockLogicalQubits[phys] = sub.permutation[phys];
@@ -75,7 +79,6 @@ void applySubCircuitToBlockDebug(const SubCircuit& sub, std::vector<qcomp>& buff
         mappedGate.target = logicalToPhysical(sub.permutation, gate.target);
         if (gate.control != -1)
             mappedGate.control = logicalToPhysical(sub.permutation, gate.control);
-        // Check if mapped target/control are within block
         bool targetInBlock = mappedGate.target >= 0 && mappedGate.target < qubitsPerBlock;
         bool controlInBlock = (gate.control == -1) || (mappedGate.control >= 0 && mappedGate.control < qubitsPerBlock);
         if (!targetInBlock || !controlInBlock) {
@@ -95,7 +98,9 @@ void applySubCircuitToBlockDebug(const SubCircuit& sub, std::vector<qcomp>& buff
         }
         GateScheduler::applyGateOpToQureg(mappedGate, tempQureg);
     }
+    std::copy(buffer.begin(), buffer.end(), amps);
 }
+
 
 std::vector<GateOp> scheduleSwaps(const std::vector<std::pair<int, int>>& swaps) {
     //std::cout << "[Debug] scheduleSwaps called with " << swaps.size() << " swaps\n";
@@ -155,14 +160,14 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
                     block.bufferIndex = blockIdx % maxBlocksInMemory;
 
                     void* alignedBuf = state.getAlignedBuffer(block.bufferIndex);
-                    state.loadBlock(block.blockIdx, block.chunkIndices, alignedBuf, block.buffer);
+                    state.loadBlock(block.blockIdx, block.chunkIndices, alignedBuf);
 
                     if (i > 0 && !transitions[i-1].swap2.empty()) {
                         SubCircuit swap2;
                         swap2.gates = scheduleSwaps(transitions[i-1].swap2);
                         swap2.permutation.resize(qubitsPerBlock);
                         std::iota(swap2.permutation.begin(), swap2.permutation.end(), 0);
-                        applySubCircuitToBlock(swap2, block.buffer, qubitsPerBlock);
+                        applySubCircuitToBlock(swap2, alignedBuf, qubitsPerBlock);
                     }
 
                     readQueue.push(std::move(block));
@@ -173,10 +178,11 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
             std::thread processor([&]() {
                 BlockData block;
                 while (readQueue.pop(block)) {
+                    void* alignedBuf = state.getAlignedBuffer(block.bufferIndex);
                     if (block.blockIdx == 0)
-                        applySubCircuitToBlockDebug(subcircuits[i], block.buffer, qubitsPerBlock);
+                        applySubCircuitToBlockDebug(subcircuits[i], alignedBuf, qubitsPerBlock);
                     else
-                        applySubCircuitToBlock(subcircuits[i], block.buffer, qubitsPerBlock);
+                        applySubCircuitToBlock(subcircuits[i], alignedBuf, qubitsPerBlock);
                     processQueue.push(std::move(block));
                 }
                 processQueue.setFinished();
@@ -185,19 +191,20 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
             std::thread writer([&]() {
                 BlockData block;
                 while (processQueue.pop(block)) {
+                    void* alignedBuf = state.getAlignedBuffer(block.bufferIndex);
+
                     if (i < transitions.size() && !transitions[i].swap1.empty()) {
                         SubCircuit swap1;
                         swap1.gates = scheduleSwaps(transitions[i].swap1);
                         swap1.permutation.resize(qubitsPerBlock);
                         std::iota(swap1.permutation.begin(), swap1.permutation.end(), 0);
                         if (block.blockIdx == 0)
-                            applySubCircuitToBlockDebug(swap1, block.buffer, qubitsPerBlock);
+                            applySubCircuitToBlockDebug(swap1, alignedBuf, qubitsPerBlock);
                         else
-                            applySubCircuitToBlock(swap1, block.buffer, qubitsPerBlock);
+                            applySubCircuitToBlock(swap1, alignedBuf, qubitsPerBlock);
                     }
 
-                    void* alignedBuf = state.getAlignedBuffer(block.bufferIndex);
-                    state.saveBlock(block.blockIdx, block.chunkIndices, alignedBuf, block.buffer);
+                    state.saveBlock(block.blockIdx, block.chunkIndices, alignedBuf);
 
                     {
                         std::lock_guard<std::mutex> lock(memMtx);
@@ -221,5 +228,6 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
         }
     }
 }
+
 
 
