@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
+#include <atomic>
+#include <thread>
 #include <vector>
 #include <complex>
 #include <liburing.h>
@@ -25,9 +28,11 @@ public:
     size_t getAmpsPerChunk() const;
     void loadChunk(size_t chunkIndex, void* alignedBuf) const;
     void saveChunk(size_t chunkIndex, void* alignedBuf) const;
-    void loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf) const;
-    void saveBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf) const;
+    void loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, std::function<void()> onComplete) const;
+    void saveBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, std::function<void()> onComplete) const;
     void diskBacked_initRandomPureState();
+    void ioCompletionLoop();
+    void diskBacked_initPlusState();
     void deleteAllChunkFiles();
     void* getAlignedBuffer(int idx) const;
     double computeTotalProbability() const;
@@ -58,7 +63,19 @@ private:
     std::vector<std::string> diskRoots;
     std::vector<std::string> chunkPaths;
 
+    std::thread ioCompletionThread;
+    std::atomic<bool> ioRunning = true;
+
+
     PermutationTracker permTracker; // tracks current permutation and chunk map
 
     void generateChunkPaths(); // file initialisation
+};
+
+struct BlockIOContext {
+    int blockIdx;
+    std::vector<int> chunkIndices;
+    void* alignedBuf;
+    std::atomic<int> remainingChunks;
+    std::function<void()> onComplete;
 };

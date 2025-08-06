@@ -86,12 +86,18 @@ size_t DiskBackedState::getAmpsPerChunk() const { return ampsPerChunk; }
 
 void DiskBackedState::ensureIoUringInitialised() const {
     if (!ioInitialised) {
-        // Increase ring size significantly to handle more concurrent operations
         if (io_uring_queue_init(512, &ring, 0) < 0) {
             throw std::runtime_error("Failed to initialize io_uring");
         }
         ioInitialised = true;
+
+        // Start the IO completion thread
+        ioRunning = true;
+        ioCompletionThread = std::thread([this]() {
+            this->ioCompletionLoop();
+        });
     }
+
     if (!filesRegistered) {
         if (io_uring_register_files(&ring, chunkFDs.data(), chunkFDs.size()) < 0) {
             throw std::runtime_error("io_uring_register_files failed");
@@ -104,64 +110,26 @@ void DiskBackedState::loadChunk(size_t chunkIndex, void* alignedBuf) const {
     if (chunkIndex >= numChunks)
         throw std::runtime_error("loadChunk: chunkIndex out of bounds");
 
-    ensureIoUringInitialised();
-    const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
-
-    io_uring_sqe* sqe = io_uring_get_sqe(&ring);
-    if (!sqe) throw std::runtime_error("loadChunk: failed to get SQE");
-
+    size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
     int fd = chunkFDs[chunkIndex];
-    io_uring_prep_read(sqe, fd, alignedBuf, chunkBytes, 0);
-    io_uring_sqe_set_data(sqe, nullptr);
 
-    if (io_uring_submit_and_wait(&ring, 1) < 0)
-        throw std::runtime_error("loadChunk: submit_and_wait failed");
-
-    io_uring_cqe* cqe;
-    if (io_uring_wait_cqe(&ring, &cqe) < 0)
-        throw std::runtime_error("loadChunk: wait_cqe failed");
-
-    if (cqe->res != (int)chunkBytes) {
-        std::string err = "loadChunk: I/O error: expected " +
-                          std::to_string(chunkBytes) + ", got " +
-                          std::to_string(cqe->res);
-        io_uring_cqe_seen(&ring, cqe);
-        throw std::runtime_error(err);
+    ssize_t bytes = pread(fd, alignedBuf, chunkBytes, 0);
+    if (bytes != (ssize_t)chunkBytes) {
+        throw std::runtime_error("loadChunk: read failed, bytes=" + std::to_string(bytes));
     }
-
-    io_uring_cqe_seen(&ring, cqe);
 }
 
-void DiskBackedState::saveChunk(size_t chunkIndex, const void* alignedBuf) const {
+void DiskBackedState::saveChunk(size_t chunkIndex, void* alignedBuf) const {
     if (chunkIndex >= numChunks)
         throw std::runtime_error("saveChunk: chunkIndex out of bounds");
 
-    ensureIoUringInitialised();
-    const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
-
-    io_uring_sqe* sqe = io_uring_get_sqe(&ring);
-    if (!sqe) throw std::runtime_error("saveChunk: failed to get SQE");
-
+    size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
     int fd = chunkFDs[chunkIndex];
-    io_uring_prep_write(sqe, fd, alignedBuf, chunkBytes, 0);
-    io_uring_sqe_set_data(sqe, nullptr);
 
-    if (io_uring_submit_and_wait(&ring, 1) < 0)
-        throw std::runtime_error("saveChunk: submit_and_wait failed");
-
-    io_uring_cqe* cqe;
-    if (io_uring_wait_cqe(&ring, &cqe) < 0)
-        throw std::runtime_error("saveChunk: wait_cqe failed");
-
-    if (cqe->res != (int)chunkBytes) {
-        std::string err = "saveChunk: I/O error: expected " +
-                          std::to_string(chunkBytes) + ", got " +
-                          std::to_string(cqe->res);
-        io_uring_cqe_seen(&ring, cqe);
-        throw std::runtime_error(err);
+    ssize_t bytes = pwrite(fd, alignedBuf, chunkBytes, 0);
+    if (bytes != (ssize_t)chunkBytes) {
+        throw std::runtime_error("saveChunk: write failed, bytes=" + std::to_string(bytes));
     }
-
-    io_uring_cqe_seen(&ring, cqe);
 }
 
 struct IOContext {
@@ -169,14 +137,21 @@ struct IOContext {
     void* chunkBuf;
 };
 
-void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf) const {
+void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, std::function<void()> onComplete) const {
     if (chunkIndices.size() != chunksPerBlock)
         throw std::runtime_error("loadBlock: chunkIndices size mismatch");
 
     ensureIoUringInitialised();
     const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
 
-    std::vector<IOContext> ioContexts(chunksPerBlock);  // stack-safe
+    auto* ctx = new BlockIOContext{
+        blockIdx,
+        chunkIndices,
+        alignedBuf,
+        static_cast<int>(chunksPerBlock),
+        std::move(onComplete)
+    };
+
     for (size_t i = 0; i < chunksPerBlock; ++i) {
         io_uring_sqe* sqe = io_uring_get_sqe(&ring);
         if (!sqe) throw std::runtime_error("loadBlock: failed to get SQE");
@@ -184,90 +159,92 @@ void DiskBackedState::loadBlock(int blockIdx, const std::vector<int>& chunkIndic
         void* chunkBuf = static_cast<char*>(alignedBuf) + i * chunkBytes;
         int fd = chunkFDs[chunkIndices[i]];
 
-        ioContexts[i] = IOContext{chunkIndices[i], chunkBuf};
         io_uring_prep_read(sqe, fd, chunkBuf, chunkBytes, 0);
-        io_uring_sqe_set_data(sqe, &ioContexts[i]);
+        io_uring_sqe_set_data(sqe, ctx);
     }
 
-    if (io_uring_submit_and_wait(&ring, chunksPerBlock) < 0)
-        throw std::runtime_error("loadBlock: submit_and_wait failed");
-
-    for (size_t i = 0; i < chunksPerBlock; ++i) {
-        io_uring_cqe* cqe;
-        if (io_uring_wait_cqe(&ring, &cqe) < 0)
-            throw std::runtime_error("loadBlock: wait_cqe failed");
-
-        IOContext* ctx = static_cast<IOContext*>(io_uring_cqe_get_data(cqe));
-
-        if (cqe->res != (int)chunkBytes) {
-            std::string err = "loadBlock: I/O error on chunkIndex " +
-                              std::to_string(ctx->chunkIndex) + ": expected " +
-                              std::to_string(chunkBytes) + ", got " +
-                              std::to_string(cqe->res);
-            io_uring_cqe_seen(&ring, cqe);
-            throw std::runtime_error(err);
-        }
-
-        io_uring_cqe_seen(&ring, cqe);
-    }
+    if (io_uring_submit(&ring) < 0)
+        throw std::runtime_error("loadBlock: submit failed");
 }
 
 
-void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndices, const void* alignedBuf) const {
+
+void DiskBackedState::saveBlock(int blockIdx, const std::vector<int>& chunkIndices, void* alignedBuf, std::function<void()> onComplete) const {
     if (chunkIndices.size() != chunksPerBlock)
         throw std::runtime_error("saveBlock: chunkIndices size mismatch");
 
     ensureIoUringInitialised();
     const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
 
-    std::vector<IOContext> ioContexts(chunksPerBlock);  // on stack
+    auto* ctx = new BlockIOContext{
+        blockIdx,
+        chunkIndices,
+        alignedBuf,
+        static_cast<int>(chunksPerBlock),
+        std::move(onComplete)
+    };
+
     for (size_t i = 0; i < chunksPerBlock; ++i) {
         io_uring_sqe* sqe = io_uring_get_sqe(&ring);
         if (!sqe) throw std::runtime_error("saveBlock: failed to get SQE");
 
-        const void* chunkBuf = static_cast<const char*>(alignedBuf) + i * chunkBytes;
+        void* chunkBuf = static_cast<char*>(alignedBuf) + i * chunkBytes;
         int fd = chunkFDs[chunkIndices[i]];
 
-        ioContexts[i] = IOContext{chunkIndices[i], const_cast<void*>(chunkBuf)};
         io_uring_prep_write(sqe, fd, chunkBuf, chunkBytes, 0);
-        io_uring_sqe_set_data(sqe, &ioContexts[i]);
+        io_uring_sqe_set_data(sqe, ctx);
     }
 
-    if (io_uring_submit_and_wait(&ring, chunksPerBlock) < 0)
-        throw std::runtime_error("saveBlock: submit_and_wait failed");
+    if (io_uring_submit(&ring) < 0)
+        throw std::runtime_error("saveBlock: submit failed");
+}
 
-    for (size_t i = 0; i < chunksPerBlock; ++i) {
+void DiskBackedState::ioCompletionLoop() {
+    while (ioRunning) {
         io_uring_cqe* cqe;
-        if (io_uring_wait_cqe(&ring, &cqe) < 0)
-            throw std::runtime_error("saveBlock: wait_cqe failed");
+        int ret = io_uring_wait_cqe(&ring, &cqe);
+        if (ret < 0) continue;
 
-        IOContext* ctx = static_cast<IOContext*>(io_uring_cqe_get_data(cqe));
-
-        if (cqe->res != (int)chunkBytes) {
-            std::string err = "saveBlock: I/O error on chunkIndex " +
-                              std::to_string(ctx->chunkIndex) + ": expected " +
-                              std::to_string(chunkBytes) + ", got " +
-                              std::to_string(cqe->res);
-            io_uring_cqe_seen(&ring, cqe);
-            throw std::runtime_error(err);
-        }
+        auto* ctx = static_cast<BlockIOContext*>(io_uring_cqe_get_data(cqe));
 
         io_uring_cqe_seen(&ring, cqe);
+
+        if (cqe->res < 0) {
+            fprintf(stderr, "IO error on block %d: %s\n", ctx->blockIdx, strerror(-cqe->res));
+            std::terminate(); // or recover
+        }
+
+        if (--ctx->remainingChunks == 0) {
+            ctx->onComplete();
+            delete ctx;
+        }
     }
 }
 
-
 DiskBackedState::~DiskBackedState() {
+    ioRunning = false;
+
+    if (ioInitialised) {
+        // Wake up the completion loop with a no-op
+        io_uring_sqe* sqe = io_uring_get_sqe(&ring);
+        if (sqe) io_uring_prep_nop(sqe);
+        io_uring_submit(&ring);
+
+        if (ioCompletionThread.joinable())
+            ioCompletionThread.join();
+
+        io_uring_queue_exit(&ring);
+    }
+
     for (int fd : chunkFDs) {
         if (fd >= 0) close(fd);
     }
     deleteAllChunkFiles();
-    if (ioInitialised) {
-        io_uring_queue_exit(&ring);
-    }
+
     for (void* ptr : alignedBufferPool)
-    free(ptr);
+        free(ptr);
 }
+
 
 void DiskBackedState::deleteAllChunkFiles() {
     for (const auto& file : chunkPaths) {
@@ -306,6 +283,16 @@ void DiskBackedState::diskBacked_initZeroState() {
             amps[i] = 0.0;
         if (chunk == 0)
             amps[0] = 1.0;
+        saveChunk(chunk, alignedBuf);
+    }
+}
+
+void DiskBackedState::diskBacked_initPlusState() {
+    qcomp amp = 1.0 / std::sqrt(numAmplitudes);
+    for (int chunk = 0; chunk < numChunks; ++chunk) {
+        void* alignedBuf = getAlignedBuffer(chunk % maxBlocksInMemory);
+        qcomp* amps = static_cast<qcomp*>(alignedBuf);
+        std::fill(amps, amps + ampsPerChunk, amp);
         saveChunk(chunk, alignedBuf);
     }
 }

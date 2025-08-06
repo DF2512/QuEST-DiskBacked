@@ -128,7 +128,6 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
     PermutationTracker& tracker = state.getPermutationTracker();
 
     std::vector<SubCircuit> subcircuits = scheduler.partitionIntoSubcircuits(numQubits, numLocalQubits, state, verbose);
-    std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
     std::vector<Transition> transitions = tracker.generateTransitions(subcircuits);
 
     if (tracker.currentPermutation != subcircuits[0].permutation) {
@@ -136,89 +135,102 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
         return;
     }
 
+    std::atomic<int> blocksCompleted = 0;
+
     for (size_t i = 0; i < subcircuits.size(); ++i) {
         tracker.currentPermutation = subcircuits[i].permutation;
         std::vector<std::vector<int>> blockChunkMapping = tracker.getBlockChunkMapping();
 
         bool noGates = subcircuits[i].gates.empty();
-        bool noSwap2 = (i == 0) || transitions[i-1].swap2.empty();
+        bool noSwap2 = (i == 0) || transitions[i - 1].swap2.empty();
         bool noSwap1 = (i >= transitions.size()) || transitions[i].swap1.empty();
 
         if (!(noGates && noSwap1 && noSwap2)) {
-            ThreadSafeQueue<BlockData> readQueue(maxBlocksInMemory);
-            ThreadSafeQueue<BlockData> processQueue(maxBlocksInMemory);
+            blocksCompleted = 0;
+            std::mutex doneMtx;
+            std::condition_variable doneCv;
 
-            std::thread reader([&]() {
-                for (int blockIdx = 0; blockIdx < numBlocks; ++blockIdx) {
-                    std::unique_lock<std::mutex> lock(memMtx);
-                    memCv.wait(lock, []() { return inFlightBlocks < maxBlocksInMemory; });
-                    inFlightBlocks++;
+            // --- Reset buffer tracking for this subcircuit ---
+            std::vector<bool> bufferBusy(maxBlocksInMemory, false);
+            std::vector<std::queue<int>> bufferQueues(maxBlocksInMemory);
+            for (int blockIdx = 0; blockIdx < numBlocks; ++blockIdx) {
+                int bufferIndex = blockIdx % maxBlocksInMemory;
+                bufferQueues[bufferIndex].push(blockIdx);
+            }
 
-                    BlockData block;
-                    block.blockIdx = blockIdx;
-                    block.chunkIndices = blockChunkMapping[blockIdx];
-                    block.bufferIndex = blockIdx % maxBlocksInMemory;
+            for (int blockIdx = 0; blockIdx < numBlocks; ++blockIdx) {
+                int bufferIndex = blockIdx % maxBlocksInMemory;
 
-                    void* alignedBuf = state.getAlignedBuffer(block.bufferIndex);
-                    state.loadBlock(block.blockIdx, block.chunkIndices, alignedBuf);
+                std::unique_lock<std::mutex> lock(memMtx);
+                memCv.wait(lock, [&]() {
+                    return (inFlightBlocks < maxBlocksInMemory &&
+                            !bufferBusy[bufferIndex] &&
+                            !bufferQueues[bufferIndex].empty() &&
+                            bufferQueues[bufferIndex].front() == blockIdx);
+                });
 
-                    if (i > 0 && !transitions[i-1].swap2.empty()) {
-                        SubCircuit swap2;
-                        swap2.gates = scheduleSwaps(transitions[i-1].swap2);
-                        swap2.permutation.resize(qubitsPerBlock);
-                        std::iota(swap2.permutation.begin(), swap2.permutation.end(), 0);
-                        applySubCircuitToBlock(swap2, alignedBuf, qubitsPerBlock);
-                    }
+                // Reserve buffer
+                inFlightBlocks++;
+                bufferBusy[bufferIndex] = true;
 
-                    readQueue.push(std::move(block));
-                }
-                readQueue.setFinished();
-            });
+                std::vector<int> chunkIndices = blockChunkMapping[blockIdx];
 
-            std::thread processor([&]() {
-                BlockData block;
-                while (readQueue.pop(block)) {
-                    void* alignedBuf = state.getAlignedBuffer(block.bufferIndex);
-                    if (block.blockIdx == 0)
-                        applySubCircuitToBlockDebug(subcircuits[i], alignedBuf, qubitsPerBlock);
-                    else
-                        applySubCircuitToBlock(subcircuits[i], alignedBuf, qubitsPerBlock);
-                    processQueue.push(std::move(block));
-                }
-                processQueue.setFinished();
-            });
+                auto currentSubcircuit = subcircuits[i];
+                auto currentSwap2 = (i > 0 ? transitions[i-1].swap2 : std::vector<std::pair<int, int>>{});
+                auto currentSwap1 = (i < transitions.size() ? transitions[i].swap1 : std::vector<std::pair<int, int>>{});
 
-            std::thread writer([&]() {
-                BlockData block;
-                while (processQueue.pop(block)) {
-                    void* alignedBuf = state.getAlignedBuffer(block.bufferIndex);
+                void* alignedBuf = state.getAlignedBuffer(bufferIndex);
+                void* localBuf = alignedBuf;  // copy pointer
 
-                    if (i < transitions.size() && !transitions[i].swap1.empty()) {
-                        SubCircuit swap1;
-                        swap1.gates = scheduleSwaps(transitions[i].swap1);
-                        swap1.permutation.resize(qubitsPerBlock);
-                        std::iota(swap1.permutation.begin(), swap1.permutation.end(), 0);
-                        if (block.blockIdx == 0)
-                            applySubCircuitToBlockDebug(swap1, alignedBuf, qubitsPerBlock);
-                        else
-                            applySubCircuitToBlock(swap1, alignedBuf, qubitsPerBlock);
-                    }
+                state.loadBlock(blockIdx, chunkIndices, localBuf,
+                    [&, blockIdx, bufferIndex, localBuf, chunkIndices, currentSubcircuit, currentSwap2, currentSwap1]() {
+                        if (!currentSwap2.empty()) {
+                            SubCircuit swap2;
+                            swap2.gates = scheduleSwaps(currentSwap2);
+                            swap2.permutation.resize(qubitsPerBlock);
+                            std::iota(swap2.permutation.begin(), swap2.permutation.end(), 0);
+                            applySubCircuitToBlock(swap2, localBuf, qubitsPerBlock);
+                        }
 
-                    state.saveBlock(block.blockIdx, block.chunkIndices, alignedBuf);
+                        applySubCircuitToBlock(currentSubcircuit, localBuf, qubitsPerBlock);
 
-                    {
-                        std::lock_guard<std::mutex> lock(memMtx);
-                        inFlightBlocks--;
-                    }
-                    memCv.notify_one();
-                }
-            });
+                        if (!currentSwap1.empty()) {
+                            SubCircuit swap1;
+                            swap1.gates = scheduleSwaps(currentSwap1);
+                            swap1.permutation.resize(qubitsPerBlock);
+                            std::iota(swap1.permutation.begin(), swap1.permutation.end(), 0);
+                            applySubCircuitToBlock(swap1, localBuf, qubitsPerBlock);
+                        }
 
-            reader.join();
-            processor.join();
-            writer.join();
+                        state.saveBlock(blockIdx, chunkIndices, localBuf,
+                            [&, blockIdx, bufferIndex]() {
+                                {
+                                    std::lock_guard<std::mutex> lock(memMtx);
+                                    inFlightBlocks--;
+                                    bufferBusy[bufferIndex] = false;
+
+                                    if (!bufferQueues[bufferIndex].empty() &&
+                                        bufferQueues[bufferIndex].front() == blockIdx)
+                                        {
+                                        bufferQueues[bufferIndex].pop();
+                                    }
+                                }
+                                memCv.notify_all();
+
+                                if (++blocksCompleted == numBlocks) {
+                                    std::lock_guard<std::mutex> lock(doneMtx);
+                                    doneCv.notify_one();
+                                }
+                    });
+                });
+            }
+
+            // Wait for all blocks to complete
+            std::unique_lock<std::mutex> doneLock(doneMtx);
+            doneCv.wait(doneLock, [&]() { return blocksCompleted == numBlocks; });
         }
 
+        // --- Handle transitions ---
         if (i < transitions.size()) {
             for (int level : transitions[i].swapLevels) {
                 int maxLevel = *std::max_element(transitions[i].swapLevels.begin(), transitions[i].swapLevels.end());
@@ -228,6 +240,4 @@ void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) 
         }
     }
 }
-
-
 
