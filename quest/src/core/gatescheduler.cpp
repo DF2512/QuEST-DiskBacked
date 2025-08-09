@@ -32,6 +32,15 @@ void GateScheduler::applyGateOpToQureg(const GateOp& op, Qureg& qureg) {
         case GateType::T:
             applyT(qureg, op.target);
             break;
+        case GateType::RotateX:
+            applyRotateX(qureg, op.target, op.angle);
+            break;
+        case GateType::RotateY:
+            applyRotateY(qureg, op.target, op.angle);
+            break;
+        case GateType::RotateZ:
+            applyRotateZ(qureg, op.target, op.angle);
+            break;
         case GateType::SqrtX:
             applyRotateX(qureg, op.target, op.angle);
             break;

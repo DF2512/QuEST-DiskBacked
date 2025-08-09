@@ -1,4 +1,5 @@
 #pragma once
+
 #include "diskbackedstate.h"
 #include "gatescheduler.h"
 
@@ -54,5 +55,5 @@ public:
 struct BlockData {
     int blockIdx;
     std::vector<int> chunkIndices;
-    int bufferIndex = -1; 
+    int bufferIndex = -1;
 };

@@ -75,6 +75,18 @@ public:
     void addT(int target) {
         schedule.push_back(GateOp{GateType::T, target, -1, M_PI / 4.0 , 0});
     }
+    // Add a Rotate-X gate
+    void addRotateX(int target, double angle) {
+        schedule.push_back(GateOp{GateType::RotateX, target, -1, angle, 0});
+    }
+    // Add a Rotate-Y gate
+    void addRotateY(int target, double angle) {
+        schedule.push_back(GateOp{GateType::RotateY, target, -1, angle, 0});
+    }
+    // Add a Rotate-Z gate
+    void addRotateZ(int target, double angle) {
+        schedule.push_back(GateOp{GateType::RotateZ, target, -1, angle, 0});
+    }
     // Add a Sqrt-X gate
     void addSqrtX(int target) {
         schedule.push_back(GateOp{GateType::SqrtX, target, -1, M_PI / 2.0, 0});

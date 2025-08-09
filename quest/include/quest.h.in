@@ -64,6 +64,7 @@
 #include "quest/include/matrices.h"
 #include "quest/include/wrappers.h"
 
+#include "quest/include/hook.h"
 #include "quest/include/diskbackedstate.h"
 #include "quest/include/gatescheduler.h"
 #include "quest/include/chunkmanager.h"

@@ -105,8 +105,7 @@ int main() {
         const int chunksPerBlock = 32;
         const int maxBlocksInMemory = 16; // Adjust as needed
         std::vector<std::string> diskRoots = {
-            "C:/quantum_chunks0",
-            "D:/quantum_chunks1"
+            
         };
 
         // 1. Create and init Qureg
@@ -119,51 +118,71 @@ int main() {
 
         // 3. Create disk-backed state and save amplitudes chunk by chunk
         DiskBackedState diskState(numQubits, numBlocks, chunksPerBlock, diskRoots, maxBlocksInMemory);
-size_t ampsPerChunk = diskState.getAmpsPerChunk();
-size_t numChunks = diskState.getNumChunks();
+        Qureg qureg = createForcedQureg(numQubits);
+        initRandomPureState(qureg);
 
-// Save initial chunks to disk
-for (size_t chunk = 0; chunk < numChunks; ++chunk) {
-    std::vector<qcomp> chunkBuf(
-        amps.begin() + chunk * ampsPerChunk,
-        amps.begin() + (chunk + 1) * ampsPerChunk
-    );
+        // 2. Copy amplitudes to vector
+        std::vector<qcomp> amps(qureg.numAmps);
+        getQuregAmps(amps.data(), qureg, 0, qureg.numAmps);
 
-    void* alignedBuf = diskState.getAlignedBuffer(0); // Use buffer from pool
-    diskState.saveChunk(chunk, alignedBuf, chunkBuf);
-}
+        // 3. Create disk-backed state and save amplitudes chunk by chunk
+        DiskBackedState diskState(numQubits, numBlocks, chunksPerBlock, diskRoots, maxBlocksInMemory);
+        size_t ampsPerChunk = diskState.getAmpsPerChunk();
+        size_t numChunks = diskState.getNumChunks();
 
-// Print and compare initial amplitudes between regular and disk-backed state
-std::vector<qcomp> ampsDiskInit(qureg.numAmps);
-for (size_t chunk = 0; chunk < numChunks; ++chunk) {
-    std::vector<qcomp> chunkBuf;
-    void* alignedBuf = diskState.getAlignedBuffer(0); // Reuse buffer for loading
-    diskState.loadChunk(chunk, alignedBuf, chunkBuf);
+        // Save initial chunks to disk
+        for (size_t chunk = 0; chunk < numChunks; ++chunk) {
 
-    std::copy(chunkBuf.begin(), chunkBuf.end(),
-              ampsDiskInit.begin() + chunk * ampsPerChunk);
-}
+            void* alignedBuf = diskState.getChunkBuffer(0,0); // Always first buffer
+            qcomp* buf = static_cast<qcomp*>(alignedBuf);
 
-int mismatchCount = 0;
-double epsInit = 1e-12;
-for (size_t i = 0; i < qureg.numAmps; ++i) {
-    if (std::abs(amps[i] - ampsDiskInit[i]) > epsInit) {
-        if (mismatchCount < 10)
-            std::cout << "Initial mismatch at index " << i
-                      << ": " << amps[i] << " vs " << ampsDiskInit[i] << std::endl;
-        ++mismatchCount;
-    }
-}
+            std::copy(
+                amps.begin() + chunk * ampsPerChunk,
+                amps.begin() + (chunk + 1) * ampsPerChunk,
+                buf
+            );
 
-if (mismatchCount == 0) {
-    std::cout << "SUCCESS: All initial amplitudes match between regular and disk-backed state." << std::endl;
-} else {
-    std::cout << "FAILURE: " << mismatchCount
-              << " initial amplitude mismatches found." << std::endl;
-}
+            // Save from first buffer slot
+            diskState.saveChunk(chunk, alignedBuf);
+        }
 
-amps.clear();
-amps.shrink_to_fit();
+        // Print and compare initial amplitudes between regular and disk-backed state
+        std::vector<qcomp> ampsDiskInit(qureg.numAmps);
+        for (size_t chunk = 0; chunk < numChunks; ++chunk) {
+            // Always load into first buffer slot
+            void* alignedBuf = diskState.getChunkBuffer(0,0);
+
+            diskState.loadChunk(chunk, alignedBuf);
+            qcomp* buf = static_cast<qcomp*>(alignedBuf);
+
+            std::copy(
+                buf,
+                buf + ampsPerChunk,
+                ampsDiskInit.begin() + chunk * ampsPerChunk
+            );
+        }
+
+        int mismatchCount = 0;
+        double epsInit = 1e-12;
+        for (size_t i = 0; i < qureg.numAmps; ++i) {
+            if (std::abs(amps[i] - ampsDiskInit[i]) > epsInit) {
+                if (mismatchCount < 10)
+                    std::cout << "Initial mismatch at index " << i
+                            << ": " << amps[i] << " vs " << ampsDiskInit[i] << std::endl;
+                ++mismatchCount;
+            }
+        }
+
+        if (mismatchCount == 0) {
+            std::cout << "SUCCESS: All initial amplitudes match between regular and disk-backed state." << std::endl;
+        } else {
+            std::cout << "FAILURE: " << mismatchCount
+                    << " initial amplitude mismatches found." << std::endl;
+        }
+
+        amps.clear();
+        amps.shrink_to_fit();
+
 
         // 4. Build a schedule applying each gate to all qubits exactly once, in random order
         GateScheduler scheduler;
@@ -352,12 +371,12 @@ amps.shrink_to_fit();
             log.segfaultOrException = true;
         }
         // Measure qubit 0
-        std::cout << "Measuring qubit 0 for disk-backed state" << std::endl;
+        //std::cout << "Measuring qubit 0 for disk-backed state" << std::endl;
         int diskOutcome = diskState.diskBacked_applyQubitMeasurement(0);
-        std::cout << "Disk-backed state measurement outcome: " << diskOutcome << std::endl;
-        std::cout << "Measuring qubit 0 for regular Qureg" << std::endl;
+        //std::cout << "Disk-backed state measurement outcome: " << diskOutcome << std::endl;
+        //std::cout << "Measuring qubit 0 for regular Qureg" << std::endl;
         int regOutcome = applyQubitMeasurement(qureg, 0);
-        std::cout << "Regular Qureg measurement outcome: " << regOutcome << std::endl;
+        //std::cout << "Regular Qureg measurement outcome: " << regOutcome << std::endl;
         // Store measurement outcomes in log
         log.diskOutcome = diskOutcome;
         log.regOutcome = regOutcome;
@@ -371,15 +390,21 @@ amps.shrink_to_fit();
         // Use the current chunk map from the permutation tracker
         const auto& chunkMap = diskState.getPermutationTracker().getCurrentChunkMap();
         for (size_t logicalChunk = 0; logicalChunk < numChunks; ++logicalChunk) {
-    size_t physicalChunk = chunkMap[logicalChunk];
-    std::vector<qcomp> chunkBuf;
+            size_t physicalChunk = chunkMap[logicalChunk];
 
-    void* alignedBuf = diskState.getAlignedBuffer(0); // Use aligned buffer from pool
-    diskState.loadChunk(physicalChunk, alignedBuf, chunkBuf);
+            // Always load into first buffer slot
+            void* alignedBuf = diskState.getChunkBuffer(0,0);
 
-    std::copy(chunkBuf.begin(), chunkBuf.end(),
-              ampsDisk.begin() + logicalChunk * ampsPerChunk);
-}
+            diskState.loadChunk(physicalChunk, alignedBuf);
+            qcomp* buf = static_cast<qcomp*>(alignedBuf);
+
+            std::copy(
+                buf,
+                buf + ampsPerChunk,
+                ampsDisk.begin() + logicalChunk * ampsPerChunk
+            );
+        }
+
 
         // 8. Compare amplitudes
         bool allMatch = true;
