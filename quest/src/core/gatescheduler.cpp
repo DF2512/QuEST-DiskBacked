@@ -3,7 +3,8 @@
 #include <numeric>
 #include <iostream>
 #include <algorithm>
-#include "diskbackedstate.h" 
+#include "diskbackedstate.h"
+#include <climits>
 #include <iostream>
 #include <numeric>
 #include <unordered_set>
@@ -13,7 +14,7 @@
 #include <random>
 #include <ctime>
 #include "gatescheduler.h"
-#include "chunkmanager.h" 
+#include "chunkmanager.h"
 #include "operations.h"
 #include "qureg.h"
 
@@ -227,8 +228,8 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
             nextGates.push_back(gate);
             if (nextGates.size() >= 32) break;
         }
-        
-        
+
+
         // Update permutation for lookahead, but don't update the tracker
         perm = optimisePermutationWithLookahead(
             perm, nextGates,
@@ -241,7 +242,7 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
     // NOTE: This is a temporary bandaid fix. There is a bug where if the last qubit is correct
     // on the penultimate subcircuit, it will not be restored correctly. Root cause is
     // unknown. More accurately, it seems that the issue happens when the swap doesnt involve the last qubit.
-    // TODO: Fix this properly. 
+    // TODO: Fix this properly.
     // Check if the final subcircuit ends with the highest qubit
     bool needsTwoStepRestoration = false;
     if (!result.empty()) {
@@ -260,7 +261,7 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
         // Swap the last two qubits
         std::swap(firstRestoration.permutation[numQubits - 1], firstRestoration.permutation[numQubits - 2]);
         result.push_back(firstRestoration);
-        
+
         // Add second restoration step: true identity
         SubCircuit secondRestoration;
         secondRestoration.gates = {}; // Empty gates
@@ -275,7 +276,7 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
         std::iota(finalSub.permutation.begin(), finalSub.permutation.end(), 0); // Identity permutation
         result.push_back(finalSub);
     }
-    
+
 
     if (verbose) {
         std::cout << "\n[Partition] Total subcircuits: " << result.size() << "\n";
@@ -297,17 +298,17 @@ void GateScheduler::addQSC(int numQubits, int depth) {
     std::mt19937 rng(std::time(nullptr));
     std::uniform_int_distribution<int> patternDist(0, 7);
     std::uniform_int_distribution<int> singleQubitDist(0, 2); // 0=SqrtX, 1=SqrtY, 2=T
-    
+
     // Track previous gates for each qubit
     std::vector<GateType> previousGates(numQubits, GateType::Hadamard); // Initial Hadamard cycle
     std::vector<bool> hadCZInPreviousCycle(numQubits, false);
-    
+
     // 1. Start with a cycle of Hadamard gates (0 clock cycle)
     for (int q = 0; q < numQubits; q++) {
         addHadamard(q);
         hadCZInPreviousCycle[q] = false; // No CZ gates in the initial cycle
     }
-    
+
     // 2. Repeat for d clock cycles
     for (int cycle = 1; cycle <= depth; cycle++) {
         // Eight CZ patterns (similar to Fig. 6)
@@ -321,17 +322,17 @@ void GateScheduler::addQSC(int numQubits, int depth) {
             {{ {0,6}, {2,8}, {4,10}, {13,19}, {15,21}, {17,23}, {24,30}, {26,32}, {28,34} }},
             {{ {1,7}, {3,9}, {5,11}, {12,18}, {14,20}, {16,22}, {25,31}, {27,33}, {29,35} }}
         };
-        
+
         // Select pattern randomly, ensuring it doesn't conflict with rules
         Pattern selectedPattern;
         bool validPattern = false;
         int attempts = 0;
         const int maxAttempts = 100;
-        
+
         while (!validPattern && attempts < maxAttempts) {
             int patternIdx = patternDist(rng);
             selectedPattern = patterns[patternIdx];
-            
+
             // Check if this pattern conflicts with the "no CNOT twice in a row" rule
             validPattern = true;
             for (const auto& pair : selectedPattern.pairs) {
@@ -343,13 +344,13 @@ void GateScheduler::addQSC(int numQubits, int depth) {
             }
             attempts++;
         }
-        
+
         // If we couldn't find a valid pattern, use the first one (fallback)
         // A better fallback will be implemented later
         if (!validPattern) {
             selectedPattern = patterns[0];
         }
-        
+
         // Apply CZ gates from the selected pattern
         std::vector<bool> hasCZThisCycle(numQubits, false);
         for (const auto& pair : selectedPattern.pairs) {
@@ -359,7 +360,7 @@ void GateScheduler::addQSC(int numQubits, int depth) {
                 hasCZThisCycle[pair.second] = true;
             }
         }
-        
+
         // Apply single-qubit gates to qubits not occupied by CZ gates
         for (int q = 0; q < numQubits; q++) {
             if (!hasCZThisCycle[q]) {
@@ -373,7 +374,7 @@ void GateScheduler::addQSC(int numQubits, int depth) {
                             break;
                         }
                     }
-                    
+
                     GateType selectedGate;
                     if (!hasHadSingleQubitGate) {
                         // Must place T gate
@@ -386,7 +387,7 @@ void GateScheduler::addQSC(int numQubits, int depth) {
                             case 1: selectedGate = GateType::SqrtY; break;
                             case 2: selectedGate = GateType::T; break;
                         }
-                        
+
                         // Rule: Any gate at qubit q should be different from the gate at qubit q in the previous cycle
                         if (selectedGate == previousGates[q]) {
                             // Try a different gate
@@ -394,12 +395,12 @@ void GateScheduler::addQSC(int numQubits, int depth) {
                                 selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtY : GateType::T;
                             } else if (previousGates[q] == GateType::SqrtY) {
                                 selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtX : GateType::T;
-                            } else { 
+                            } else {
                                 selectedGate = (singleQubitDist(rng) < 1) ? GateType::SqrtX : GateType::SqrtY;
                             }
                         }
                     }
-                    
+
                     // Apply the selected gate
                     switch (selectedGate) {
                         case GateType::SqrtX:
@@ -414,20 +415,18 @@ void GateScheduler::addQSC(int numQubits, int depth) {
                         default:
                             break;
                     }
-                    
+
                     previousGates[q] = selectedGate;
                 }
             }
         }
-        
+
         // Update tracking for next cycle
         hadCZInPreviousCycle = hasCZThisCycle;
     }
-    
+
     // 3. Repeat the Hadamards at the end
     for (int q = 0; q < numQubits; q++) {
         addHadamard(q);
     }
 }
-
-

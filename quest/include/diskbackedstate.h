@@ -56,6 +56,7 @@ public:
     void diskBacked_initRandomPureState();
     void diskBacked_initZeroState();
     void diskBacked_initPlusState();
+    void diskBacked_initBlankState();
 
     // --- State analysis ---
     double computeTotalProbability() const;

@@ -15,6 +15,7 @@
 #include <cstring>
 #include <omp.h>
 #include "quest/src/core/randomiser.hpp"
+#include "quest/src/core/localiser.hpp"
 
 DiskBackedState::DiskBackedState(int numQubits_, int numBlocks_, int chunksPerBlock_,
                                  const std::vector<std::string>& diskRoots_, int maxBlocksInMemory_)
@@ -611,39 +612,376 @@ DiskBackedState::~DiskBackedState() {
 
 
 void DiskBackedState::diskBacked_initRandomPureState() {
-    void* alignedBuf = getChunkBuffer(0,0); // always use first buffer
-    for (size_t chunk = 0; chunk < numChunks; ++chunk) {
-        Qureg chunkQureg = createForcedQureg(numQubitsPerChunk);
-        initRandomPureState(chunkQureg);
+    // --- Preconditions & derived sizes (read-only) ---
+    const int numBlocksLocal = getNumBlocks();
+    const int qubitsPerBlock = getNumQubitsPerBlock();
+    const int maxBlocks = getMaxBlocksInMemory();
 
-        double square_root = std::sqrt(numChunks);
-        for (qindex i = 0; i < ampsPerChunk; ++i) {
-            chunkQureg.cpuAmps[i] /= square_root;
+    const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
+    const size_t blockAmps = static_cast<size_t>(chunksPerBlock) * ampsPerChunk;
+    const size_t blockBytes = blockAmps * sizeof(qcomp);
+
+    const double normFactor = 1.0 / std::sqrt(static_cast<double>(numBlocksLocal));
+
+    if (blockBytes == 0) {
+        return;
+    }
+
+    // --- Synchronisation primitives (match runCircuit() style) ---
+    std::mutex memMtx;
+    std::condition_variable memCv;
+    int inFlightBlocks = 0;
+
+    std::vector<bool> bufferBusy(maxBlocks, false);
+
+    // Ensure buffers exist
+    for (int i = 0; i < maxBlocks; ++i) {
+        void* p = getAlignedBuffer(i);
+        if (p == nullptr) {
+            throw std::runtime_error("Aligned buffer missing");
+        }
+    }
+
+    // Main loop: process each block
+    for (int blockIdx = 0; blockIdx < numBlocksLocal; ++blockIdx) {
+        int bufferIndex = blockIdx % maxBlocks;
+
+        // Wait until buffer is free and capacity available
+        {
+            std::unique_lock<std::mutex> lock(memMtx);
+            memCv.wait(lock, [&]() {
+                return (inFlightBlocks < maxBlocks) && (!bufferBusy[bufferIndex]);
+            });
+            inFlightBlocks++;
+            bufferBusy[bufferIndex] = true;
         }
 
-        memcpy(alignedBuf, chunkQureg.cpuAmps, ampsPerChunk * sizeof(qcomp));
-        saveChunk(chunk, alignedBuf);
-        destroyQureg(chunkQureg);
+        // Zero the buffer
+        void* blockBuf = getAlignedBuffer(bufferIndex);
+        std::memset(blockBuf, 0, blockBytes);
+
+        // Create a Qureg that uses the block buffer
+        Qureg tempQureg = createTempQureg(blockBuf, qubitsPerBlock);
+        if (tempQureg.cpuAmps == nullptr) {
+            try { destroyQureg(tempQureg); } catch (...) {}
+            {
+                std::lock_guard<std::mutex> lk(memMtx);
+                inFlightBlocks--;
+                bufferBusy[bufferIndex] = false;
+            }
+            memCv.notify_all();
+            throw std::runtime_error("createTempQureg produced null cpuAmps");
+        }
+
+        // Initialize random pure state
+        initRandomPureState(tempQureg);
+
+        // Normalise amplitudes
+        for (size_t a = 0; a < blockAmps; ++a) {
+            tempQureg.cpuAmps[a] *= normFactor;
+        }
+
+        // Build chunkIndices vector
+        std::vector<int> chunkIndices;
+        chunkIndices.reserve(chunksPerBlock);
+        for (int local = 0; local < chunksPerBlock; ++local) {
+            chunkIndices.push_back(blockIdx * chunksPerBlock + local);
+        }
+
+        // Save block asynchronously
+        saveBlock(blockIdx, chunkIndices,
+                  [&, bufferIndex, blockIdx]() {
+                      {
+                          std::lock_guard<std::mutex> lock(memMtx);
+                          inFlightBlocks--;
+                          bufferBusy[bufferIndex] = false;
+                      }
+                      memCv.notify_all();
+                  });
+    }
+
+    // Wait for all in-flight saves to finish
+    {
+        std::unique_lock<std::mutex> lock(memMtx);
+        memCv.wait(lock, [&]() {
+            return inFlightBlocks == 0;
+        });
     }
 }
 
 void DiskBackedState::diskBacked_initZeroState() {
-    void* alignedBuf = getChunkBuffer(0,0);
-    qcomp* amps = static_cast<qcomp*>(alignedBuf);
-    for (size_t chunk = 0; chunk < numChunks; ++chunk) {
-        std::fill(amps, amps + ampsPerChunk, qcomp(0.0, 0.0));
-        if (chunk == 0) amps[0] = 1.0;
-        saveChunk(chunk, alignedBuf);
+    // --- Preconditions & derived sizes (read-only) ---
+    const int numBlocksLocal = getNumBlocks();
+    const int qubitsPerBlock = getNumQubitsPerBlock();
+    const int maxBlocks = getMaxBlocksInMemory();
+
+    const size_t blockAmps = static_cast<size_t>(chunksPerBlock) * ampsPerChunk;
+    const size_t blockBytes = blockAmps * sizeof(qcomp);
+
+    if (blockBytes == 0) {
+        return;
+    }
+
+    // --- Synchronisation primitives (match runCircuit() style) ---
+    std::mutex memMtx;
+    std::condition_variable memCv;
+    int inFlightBlocks = 0;
+
+    std::vector<bool> bufferBusy(maxBlocks, false);
+
+    // Ensure buffers exist
+    for (int i = 0; i < maxBlocks; ++i) {
+        void* p = getAlignedBuffer(i);
+        if (p == nullptr) {
+            throw std::runtime_error("Aligned buffer missing");
+        }
+    }
+
+    // Main loop: process each block
+    for (int blockIdx = 0; blockIdx < numBlocksLocal; ++blockIdx) {
+        int bufferIndex = blockIdx % maxBlocks;
+
+        // Wait until buffer is free and capacity available
+        {
+            std::unique_lock<std::mutex> lock(memMtx);
+            memCv.wait(lock, [&]() {
+                return (inFlightBlocks < maxBlocks) && (!bufferBusy[bufferIndex]);
+            });
+            inFlightBlocks++;
+            bufferBusy[bufferIndex] = true;
+        }
+
+        // Zero the buffer
+        void* blockBuf = getAlignedBuffer(bufferIndex);
+        std::memset(blockBuf, 0, blockBytes);
+
+        // Create a Qureg that uses the block buffer (non-owning)
+        Qureg tempQureg = createTempQureg(blockBuf, qubitsPerBlock);
+        if (tempQureg.cpuAmps == nullptr) {
+            {
+                std::lock_guard<std::mutex> lk(memMtx);
+                inFlightBlocks--;
+                bufferBusy[bufferIndex] = false;
+            }
+            memCv.notify_all();
+            throw std::runtime_error("createTempQureg produced null cpuAmps");
+        }
+
+        // Initialise zero or blank state depending on block index
+        if (blockIdx == 0) {
+            initZeroState(tempQureg);
+        } else {
+            initBlankState(tempQureg);
+        }
+
+        // Build chunkIndices vector
+        std::vector<int> chunkIndices;
+        chunkIndices.reserve(chunksPerBlock);
+        for (int local = 0; local < chunksPerBlock; ++local) {
+            chunkIndices.push_back(blockIdx * chunksPerBlock + local);
+        }
+
+        // Save block asynchronously
+        saveBlock(blockIdx, chunkIndices,
+                  [&, bufferIndex]() {
+                      {
+                          std::lock_guard<std::mutex> lock(memMtx);
+                          inFlightBlocks--;
+                          bufferBusy[bufferIndex] = false;
+                      }
+                      memCv.notify_all();
+                  });
+    }
+
+    // Wait for all in-flight saves to finish
+    {
+        std::unique_lock<std::mutex> lock(memMtx);
+        memCv.wait(lock, [&]() {
+            return inFlightBlocks == 0;
+        });
     }
 }
 
 void DiskBackedState::diskBacked_initPlusState() {
-    void* alignedBuf = getChunkBuffer(0,0);
-    qcomp* amps = static_cast<qcomp*>(alignedBuf);
-    qcomp amp = 1.0 / std::sqrt(numAmplitudes);
-    for (size_t chunk = 0; chunk < numChunks; ++chunk) {
-        std::fill(amps, amps + ampsPerChunk, amp);
-        saveChunk(chunk, alignedBuf);
+    // --- Preconditions & derived sizes (read-only) ---
+    const int numBlocksLocal = getNumBlocks();
+    const int qubitsPerBlock = getNumQubitsPerBlock();
+    const int maxBlocks = getMaxBlocksInMemory();
+
+    const size_t chunkBytes = ampsPerChunk * sizeof(qcomp);
+    const size_t blockAmps = static_cast<size_t>(chunksPerBlock) * ampsPerChunk;
+    const size_t blockBytes = blockAmps * sizeof(qcomp);
+
+    const size_t numAmplitudes = static_cast<size_t>(numBlocksLocal) * blockAmps;
+    const qcomp amp = 1.0 / std::sqrt(static_cast<double>(numAmplitudes));
+
+    if (blockBytes == 0) {
+        return;
+    }
+
+    // --- Synchronisation primitives (match runCircuit() style) ---
+    std::mutex memMtx;
+    std::condition_variable memCv;
+    int inFlightBlocks = 0;
+
+    std::vector<bool> bufferBusy(maxBlocks, false);
+
+    // Ensure buffers exist
+    for (int i = 0; i < maxBlocks; ++i) {
+        void* p = getAlignedBuffer(i);
+        if (p == nullptr) {
+            throw std::runtime_error("Aligned buffer missing");
+        }
+    }
+
+    // Main loop: process each block
+    for (int blockIdx = 0; blockIdx < numBlocksLocal; ++blockIdx) {
+        int bufferIndex = blockIdx % maxBlocks;
+
+        // Wait until buffer is free and capacity available
+        {
+            std::unique_lock<std::mutex> lock(memMtx);
+            memCv.wait(lock, [&]() {
+                return (inFlightBlocks < maxBlocks) && (!bufferBusy[bufferIndex]);
+            });
+            inFlightBlocks++;
+            bufferBusy[bufferIndex] = true;
+        }
+
+        // Zero the buffer
+        void* blockBuf = getAlignedBuffer(bufferIndex);
+        std::memset(blockBuf, 0, blockBytes);
+
+        // Create a Qureg that uses the block buffer
+        Qureg tempQureg = createTempQureg(blockBuf, qubitsPerBlock);
+        if (tempQureg.cpuAmps == nullptr) {
+            try { destroyQureg(tempQureg); } catch (...) {}
+            {
+                std::lock_guard<std::mutex> lk(memMtx);
+                inFlightBlocks--;
+                bufferBusy[bufferIndex] = false;
+            }
+            memCv.notify_all();
+            throw std::runtime_error("createTempQureg produced null cpuAmps");
+        }
+
+        // Initialize plus state (uniform superposition)
+        localiser_statevec_initUniformState(tempQureg, amp);
+
+        // Build chunkIndices vector
+        std::vector<int> chunkIndices;
+        chunkIndices.reserve(chunksPerBlock);
+        for (int local = 0; local < chunksPerBlock; ++local) {
+            chunkIndices.push_back(blockIdx * chunksPerBlock + local);
+        }
+
+        // Save block asynchronously
+        saveBlock(blockIdx, chunkIndices,
+                  [&, bufferIndex, blockIdx]() {
+                      {
+                          std::lock_guard<std::mutex> lock(memMtx);
+                          inFlightBlocks--;
+                          bufferBusy[bufferIndex] = false;
+                      }
+                      memCv.notify_all();
+                  });
+    }
+
+    // Wait for all in-flight saves to finish
+    {
+        std::unique_lock<std::mutex> lock(memMtx);
+        memCv.wait(lock, [&]() {
+            return inFlightBlocks == 0;
+        });
+    }
+}
+
+void DiskBackedState::diskBacked_initBlankState() {
+    // --- Preconditions & derived sizes (read-only) ---
+    const int numBlocksLocal = getNumBlocks();
+    const int qubitsPerBlock = getNumQubitsPerBlock();
+    const int maxBlocks = getMaxBlocksInMemory();
+
+    const size_t blockAmps = static_cast<size_t>(chunksPerBlock) * ampsPerChunk;
+    const size_t blockBytes = blockAmps * sizeof(qcomp);
+
+    if (blockBytes == 0) {
+        return;
+    }
+
+    // --- Synchronisation primitives (match runCircuit() style) ---
+    std::mutex memMtx;
+    std::condition_variable memCv;
+    int inFlightBlocks = 0;
+
+    std::vector<bool> bufferBusy(maxBlocks, false);
+
+    // Ensure buffers exist
+    for (int i = 0; i < maxBlocks; ++i) {
+        void* p = getAlignedBuffer(i);
+        if (p == nullptr) {
+            throw std::runtime_error("Aligned buffer missing");
+        }
+    }
+
+    // Main loop: process each block
+    for (int blockIdx = 0; blockIdx < numBlocksLocal; ++blockIdx) {
+        int bufferIndex = blockIdx % maxBlocks;
+
+        // Wait until buffer is free and capacity available
+        {
+            std::unique_lock<std::mutex> lock(memMtx);
+            memCv.wait(lock, [&]() {
+                return (inFlightBlocks < maxBlocks) && (!bufferBusy[bufferIndex]);
+            });
+            inFlightBlocks++;
+            bufferBusy[bufferIndex] = true;
+        }
+
+        // Zero the buffer
+        void* blockBuf = getAlignedBuffer(bufferIndex);
+        std::memset(blockBuf, 0, blockBytes);
+
+        // Create a Qureg that uses the block buffer (non-owning)
+        Qureg tempQureg = createTempQureg(blockBuf, qubitsPerBlock);
+        if (tempQureg.cpuAmps == nullptr) {
+            {
+                std::lock_guard<std::mutex> lk(memMtx);
+                inFlightBlocks--;
+                bufferBusy[bufferIndex] = false;
+            }
+            memCv.notify_all();
+            throw std::runtime_error("createTempQureg produced null cpuAmps");
+        }
+
+        // Initialise blank state
+        initBlankState(tempQureg);
+
+        // Build chunkIndices vector
+        std::vector<int> chunkIndices;
+        chunkIndices.reserve(chunksPerBlock);
+        for (int local = 0; local < chunksPerBlock; ++local) {
+            chunkIndices.push_back(blockIdx * chunksPerBlock + local);
+        }
+
+        // Save block asynchronously
+        saveBlock(blockIdx, chunkIndices,
+                  [&, bufferIndex]() {
+                      {
+                          std::lock_guard<std::mutex> lock(memMtx);
+                          inFlightBlocks--;
+                          bufferBusy[bufferIndex] = false;
+                      }
+                      memCv.notify_all();
+                  });
+    }
+
+    // Wait for all in-flight saves to finish
+    {
+        std::unique_lock<std::mutex> lock(memMtx);
+        memCv.wait(lock, [&]() {
+            return inFlightBlocks == 0;
+        });
     }
 }
 
@@ -715,4 +1053,5 @@ int DiskBackedState::diskBacked_applyQubitMeasurement(int qubit) {
 
     return outcome;
 }
-                                                         
+
+                                                                                       

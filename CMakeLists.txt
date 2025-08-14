@@ -466,6 +466,7 @@ add_executable(min_example
   examples/tutorials/min_example.cpp
 )
 target_link_libraries(min_example PRIVATE QuEST::QuEST)
+target_link_libraries(min_example PRIVATE uring)
 
 # Add the same compile definitions that QuEST has
 target_compile_definitions(min_example PRIVATE 
@@ -475,9 +476,6 @@ target_compile_definitions(min_example PRIVATE
   COMPILE_CUQUANTUM=0
 )
 
-if(USE_DISK_BACKED)
-    target_compile_definitions(min_example PUBLIC USE_DISK_BACKED)
-endif()
 
 install(TARGETS min_example
   RUNTIME
@@ -524,9 +522,7 @@ if (USER_SOURCE AND OUTPUT_EXE)
 
   add_executable(${OUTPUT_EXE} ${USER_SOURCE})
   target_link_libraries(${OUTPUT_EXE} PUBLIC QuEST)
-  if(USE_DISK_BACKED)
-    target_compile_definitions(${OUTPUT_EXE} PUBLIC USE_DISK_BACKED)
-  endif()
+  target_link_libraries(${OUTPUT_EXE} PRIVATE uring)
   install(TARGETS ${OUTPUT_EXE} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   setup_quest_rpath(${OUTPUT_EXE})
 endif()

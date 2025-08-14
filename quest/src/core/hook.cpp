@@ -2,7 +2,6 @@
 #include "quest/include/environment.h"
 #include <vector>
 
-// Given a buffer and metadata, create a Qureg that points to it
 Qureg createTempQureg(void* rawBuf, int qubits) {
     QuESTEnv env = getQuESTEnv();
 

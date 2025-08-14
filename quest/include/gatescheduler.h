@@ -144,8 +144,8 @@ public:
         }
     }
     // Add a Quantum Supremacy Circuit
-    void addQSC(int numQubits, int depth); 
-    
+    void addQSC(int numQubits, int depth);
+
 
     // Get the full schedule
     const std::vector<GateOp>& getSchedule() const { return schedule; }
@@ -161,4 +161,3 @@ public:
 private:
     std::vector<GateOp> schedule;
 };
-

@@ -41,9 +41,9 @@ public:
     std::vector<Transition> generateTransitions(const std::vector<SubCircuit>& subcircuits);
     std::vector<int> currentPermutation;
 
-    
+
 private:
-    
+
     int numQubits;
     int numBlocks;
     int chunksPerBlock;
@@ -51,18 +51,18 @@ private:
     int qubitsPerChunk;
     int numChunks;
 
-    
-    
+
+
 
     void computeChunkShuffle(const std::vector<int>& targetPerm);
-    
+
 };
 /*
 // ─── Transition Functions (MISSING BEFORE) ───────────────
 Transition generate_transition(
     const std::vector<int>& prev_perm,
     const std::vector<int>& target_perm
-    
+
 );
 */
 

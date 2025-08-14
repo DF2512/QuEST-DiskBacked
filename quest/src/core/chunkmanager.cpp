@@ -1,4 +1,4 @@
-#pragma once
+pragma once
 
 #include <iostream>
 #include <vector>
@@ -61,37 +61,37 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
     // For swap1: For each qubit q in the upper region of the target permutation
     std::vector<bool> middle_used(middle_end - middle_start, false);
     std::vector<bool> upper_preserved(upper_end - upper_start, false);
-    
+
     // First pass: Mark qubits that are already in their correct positions in the upper region
     for (int qidx = 0; qidx < upper_end - upper_start; ++qidx) {
         int q = target_permutation[upper_start + qidx];
         int target_pos = upper_start + qidx;
-        
+
         // Check if q is already at its correct position in interim_prev
         if (interim_prev[target_pos] == q) {
             upper_preserved[qidx] = true;
-            std::cout << "[DEBUG] Preserving qubit " << q << " at position " << target_pos << " (already correct)" << std::endl;
-            
-            
+           // std::cout << "[DEBUG] Preserving qubit " << q << " at position " << target_pos << " (already correct)" << std::endl;
+
+
         }
     }
-    
+
     // Second pass: Process qubits that need to be moved, but skip preserved ones
     for (int qidx = 0; qidx < upper_end - upper_start; ++qidx) {
         int q = target_permutation[upper_start + qidx];
-        
+
         // Skip if this qubit is already preserved in its correct position
         if (upper_preserved[qidx]) {
             continue;
         }
-        
+
         // Recheck all previous qs for correctness
         for (int prev_qidx = 0; prev_qidx < qidx; ++prev_qidx) {
             int prev_q = target_permutation[upper_start + prev_qidx];
             auto it_up = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, prev_q);
-            if (it_up == interim_prev.begin() + upper_end) {
-                std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: prev_q " << prev_q << " not in upper region after supposed placement!" << std::endl;
-            }
+           // if (it_up == interim_prev.begin() + upper_end) {
+           //     std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: prev_q " << prev_q << " not in upper region after supposed placement!" << std::endl;
+           // }
         }
         // If q is present in the upper region of interim_prev, do nothing
         auto it_up = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, q);
@@ -127,14 +127,14 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         int lower_idx = std::distance(interim_prev.begin(), it);
         std::swap(interim_prev[lower_idx], interim_prev[middle_slot]);
         swap1.emplace_back(lower_idx, middle_slot);
-        
+
         // After each q, recheck all previous qs
         for (int prev_qidx = 0; prev_qidx <= qidx; ++prev_qidx) {
             int prev_q = target_permutation[upper_start + prev_qidx];
             auto it_up2 = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, prev_q);
-            if (it_up2 == interim_prev.begin() + upper_end) {
-                std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: prev_q " << prev_q << " not in upper region after swap!" << std::endl;
-            }
+           // if (it_up2 == interim_prev.begin() + upper_end) {
+           //     std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: prev_q " << prev_q << " not in upper region after swap!" << std::endl;
+           // }
         }
     }
 
@@ -153,7 +153,7 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
             int j = std::distance(interim_target.begin(), it);
             std::swap(interim_target[i], interim_target[j]);
             swap2_rev.emplace_back(i, j);
-        
+
             // After a swap, restart from the beginning
             break;
         }
@@ -204,7 +204,7 @@ vector<int> applySwaps(const vector<int>& permutation, const vector<pair<int, in
 
 // Function to generate swap steps to match a target permutation
 vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
-    
+
 
     vector<int> steps;
 
@@ -229,7 +229,7 @@ vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
 
 // Function containing logic for chunk index permuting
 vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int level, int max_level) {
-    
+
     int x = 1 << (max_level - level);
     //cout << "\n=== Shuffling with x = " << x << " ===\n";
     //cout << "[Debug] Starting area swap shuffle...\n";
@@ -243,7 +243,7 @@ vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int lev
 
     for (int r = 0; r < x; ++r) {
         //if (r % 10 == 0) cout << "[Debug] Processing region " << r << "/" << x << "\n";
-        
+
         int start = r * region_size;
         int end = start + region_size;
         vector<int> region(perm.begin() + start, perm.begin() + end);
@@ -269,7 +269,7 @@ vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int lev
         new_perm.insert(new_perm.end(), area1.begin(), area1.end());
         new_perm.insert(new_perm.end(), area3.begin(), area3.end());
     }
-    
+
     //cout << "[Debug] Area swap shuffle completed\n";
     return new_perm;
 }
@@ -279,7 +279,7 @@ Transition PermutationTracker::generateTransition(
     const std::vector<int>& prev_perm,
     const std::vector<int>& target_perm
 ) {
-    
+
     auto [swap1, swap2_rev, interim_target] = alignUpperQubitsAndGenerateInterim(prev_perm, target_perm);
 
     std::vector<int> interim_prev = applySwaps(prev_perm, swap1);
@@ -322,7 +322,7 @@ PermutationTracker::PermutationTracker(int numQubits_, int numBlocks_, int chunk
     numChunks = numBlocks * chunksPerBlock;
     qubitsPerBlock = numQubits - static_cast<int>(std::log2(numBlocks));
     qubitsPerChunk = qubitsPerBlock - static_cast<int>(std::log2(chunksPerBlock));
-    
+
     // identity permutation and linear chunk map
     currentPermutation.resize(numQubits);
     std::iota(currentPermutation.begin(), currentPermutation.end(), 0);
@@ -335,7 +335,7 @@ PermutationTracker::PermutationTracker(int numQubits_, int numBlocks_, int chunk
 
 // Function to determine the current block-chunk mapping
 std::vector<std::vector<int>> PermutationTracker::getBlockChunkMapping() const {
-    
+
 
     std::vector<std::vector<int>> blocks(numBlocks);
 
@@ -371,4 +371,3 @@ const std::vector<int>& PermutationTracker::getCurrentPermutation() const {
 const std::vector<int>& PermutationTracker::getCurrentChunkMap() const {
     return chunkMap;
 }
-
