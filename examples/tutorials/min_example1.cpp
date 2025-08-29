@@ -118,15 +118,6 @@ int main() {
 
         // 3. Create disk-backed state and save amplitudes chunk by chunk
         DiskBackedState diskState(numQubits, numBlocks, chunksPerBlock, diskRoots, maxBlocksInMemory);
-        Qureg qureg = createForcedQureg(numQubits);
-        initRandomPureState(qureg);
-
-        // 2. Copy amplitudes to vector
-        std::vector<qcomp> amps(qureg.numAmps);
-        getQuregAmps(amps.data(), qureg, 0, qureg.numAmps);
-
-        // 3. Create disk-backed state and save amplitudes chunk by chunk
-        DiskBackedState diskState(numQubits, numBlocks, chunksPerBlock, diskRoots, maxBlocksInMemory);
         size_t ampsPerChunk = diskState.getAmpsPerChunk();
         size_t numChunks = diskState.getNumChunks();
 
