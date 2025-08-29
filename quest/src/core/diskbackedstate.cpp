@@ -636,7 +636,7 @@ void DiskBackedState::diskBacked_initRandomPureState() {
         return;
     }
 
-    // --- Synchronisation primitives (match runCircuit() style) ---
+    // --- Synchronisation primitives ---
     std::mutex memMtx;
     std::condition_variable memCv;
     int inFlightBlocks = 0;

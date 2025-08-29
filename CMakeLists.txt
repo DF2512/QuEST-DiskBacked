@@ -482,6 +482,25 @@ install(TARGETS min_example
   DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+add_executable(min_example1
+  examples/tutorials/min_example1.cpp
+)
+target_link_libraries(min_example1 PRIVATE QuEST::QuEST)
+target_link_libraries(min_example1 PRIVATE uring)
+
+# Add the same compile definitions that QuEST has
+target_compile_definitions(min_example1 PRIVATE 
+  COMPILE_MPI=0
+  COMPILE_OPENMP=1
+  COMPILE_CUDA=0
+  COMPILE_CUQUANTUM=0
+)
+
+install(TARGETS min_example1
+  RUNTIME
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
@@ -509,6 +528,7 @@ endfunction()
 
 setup_quest_rpath(QuEST)
 setup_quest_rpath(min_example)
+setup_quest_rpath(min_example1)
 ## User Source
 
 if (USER_SOURCE AND NOT OUTPUT_EXE)
