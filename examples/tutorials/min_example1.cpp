@@ -363,15 +363,15 @@ int main() {
         }
         // Measure qubit 0
         //std::cout << "Measuring qubit 0 for disk-backed state" << std::endl;
-        int diskOutcome = diskState.diskBacked_applyQubitMeasurement(0);
+        //int diskOutcome = diskState.diskBacked_applyQubitMeasurement(0);
         //std::cout << "Disk-backed state measurement outcome: " << diskOutcome << std::endl;
         //std::cout << "Measuring qubit 0 for regular Qureg" << std::endl;
-        int regOutcome = applyQubitMeasurement(qureg, 0);
+        //int regOutcome = applyQubitMeasurement(qureg, 0);
         //std::cout << "Regular Qureg measurement outcome: " << regOutcome << std::endl;
         // Store measurement outcomes in log
-        log.diskOutcome = diskOutcome;
-        log.regOutcome = regOutcome;
-        log.measurementMatch = (diskOutcome == regOutcome);
+        //log.diskOutcome = diskOutcome;
+        //log.regOutcome = regOutcome;
+        //log.measurementMatch = (diskOutcome == regOutcome);
         
         // 7. Extract amplitudes from both
         std::vector<qcomp> ampsRegular(qureg.numAmps);
