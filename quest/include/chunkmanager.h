@@ -50,23 +50,9 @@ private:
     int qubitsPerBlock;
     int qubitsPerChunk;
     int numChunks;
-
-
-
-
     void computeChunkShuffle(const std::vector<int>& targetPerm);
 
 };
-/*
-// ─── Transition Functions (MISSING BEFORE) ───────────────
-Transition generate_transition(
-    const std::vector<int>& prev_perm,
-    const std::vector<int>& target_perm
-
-);
-*/
-
-// ─── Full Permutation Transition (used by pipeline) ──────
 
 // Declaration for applySwaps
 std::vector<int> applySwaps(const std::vector<int>& permutation, const std::vector<std::pair<int, int>>& swaps);

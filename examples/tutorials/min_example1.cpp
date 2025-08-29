@@ -106,7 +106,7 @@ int main() {
         const int maxBlocksInMemory = 16; // Adjust as needed
         std::vector<std::string> diskRoots = {
             
-        };
+        };// --------------- EDIT THIS VECTOR ----------------- ADD PATH TO DIRECTORY AS STRING ---------------
 
         // 1. Create and init Qureg
         Qureg qureg = createForcedQureg(numQubits);

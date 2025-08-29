@@ -70,10 +70,7 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         // Check if q is already at its correct position in interim_prev
         if (interim_prev[target_pos] == q) {
             upper_preserved[qidx] = true;
-           // std::cout << "[DEBUG] Preserving qubit " << q << " at position " << target_pos << " (already correct)" << std::endl;
-
-
-        }
+                   }
     }
 
     // Second pass: Process qubits that need to be moved, but skip preserved ones
@@ -88,10 +85,7 @@ PermutationTracker::alignUpperQubitsAndGenerateInterim(
         // Recheck all previous qs for correctness
         for (int prev_qidx = 0; prev_qidx < qidx; ++prev_qidx) {
             int prev_q = target_permutation[upper_start + prev_qidx];
-            auto it_up = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, prev_q);
-           // if (it_up == interim_prev.begin() + upper_end) {
-           //     std::cerr << "[alignUpperQubitsAndGenerateInterim] ERROR: prev_q " << prev_q << " not in upper region after supposed placement!" << std::endl;
-           // }
+            auto it_up = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, prev_q);           
         }
         // If q is present in the upper region of interim_prev, do nothing
         auto it_up = std::find(interim_prev.begin() + upper_start, interim_prev.begin() + upper_end, q);
@@ -213,17 +207,11 @@ vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
 
         auto it = find(current.begin() + i, current.end(), target[i]);
         int target_index = distance(current.begin(), it);
-
-        //std::cout << "[DEBUG] Moving element " << target[i] << " from position " << target_index << " to " << i << "\n";
-
         for (int j = target_index; j > (int)i; --j) {
             swap(current[j], current[j - 1]);
             steps.push_back(j);
-            //std::cout << "[DEBUG] Added swap level: " << j << "\n";
         }
     }
-
-    //std::cout << "[DEBUG] swapToMatch returning " << steps.size() << " levels\n";
     return steps;
 }
 
@@ -231,24 +219,18 @@ vector<int> swapToMatch(vector<int> current, const vector<int>& target) {
 vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int level, int max_level) {
 
     int x = 1 << (max_level - level);
-    //cout << "\n=== Shuffling with x = " << x << " ===\n";
-    //cout << "[Debug] Starting area swap shuffle...\n";
 
     if (perm.size() % x != 0)
         throw invalid_argument("Permutation length must be divisible by region size x.");
 
     int region_size = perm.size() / x;
     vector<int> new_perm;
-    //cout << "[Debug] Processing " << x << " regions of size " << region_size << "\n";
 
     for (int r = 0; r < x; ++r) {
-        //if (r % 10 == 0) cout << "[Debug] Processing region " << r << "/" << x << "\n";
-
         int start = r * region_size;
         int end = start + region_size;
         vector<int> region(perm.begin() + start, perm.begin() + end);
 
-        // If region_size is too small, just copy the region as-is
         if (region_size < 4) {
             new_perm.insert(new_perm.end(), region.begin(), region.end());
             continue;
@@ -270,7 +252,6 @@ vector<int> PermutationTracker::areaSwapShuffle(const vector<int>& perm, int lev
         new_perm.insert(new_perm.end(), area3.begin(), area3.end());
     }
 
-    //cout << "[Debug] Area swap shuffle completed\n";
     return new_perm;
 }
 
@@ -340,7 +321,6 @@ std::vector<std::vector<int>> PermutationTracker::getBlockChunkMapping() const {
     std::vector<std::vector<int>> blocks(numBlocks);
 
     for (int i = 0; i < numBlocks; ++i) {
-        //std::cout << "  Block " << i << ":\n";
         for (int j = 0; j < chunksPerBlock; ++j) {
             int flatIndex = i * chunksPerBlock + j;
 
@@ -353,13 +333,9 @@ std::vector<std::vector<int>> PermutationTracker::getBlockChunkMapping() const {
             }
 
             int chunk = chunkMap[flatIndex];
-            //std::cout << "    chunkMap[" << flatIndex << "] = " << chunk << "\n";
-
             blocks[i].push_back(chunk);
         }
     }
-
-    //std::cout << "[PermutationTracker] Block-chunk mapping complete.\n";
     return blocks;
 }
 

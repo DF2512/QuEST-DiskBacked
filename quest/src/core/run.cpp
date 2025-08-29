@@ -62,6 +62,7 @@ std::vector<GateOp> scheduleSwaps(const std::vector<std::pair<int, int>>& swaps)
     return result;
 }
 
+// Full circuit execution function with buffering logic
 void runCircuit(GateScheduler& scheduler, DiskBackedState& state, bool verbose) {
     int numQubits = state.getNumQubits();
     int numLocalQubits = state.getNumQubitsPerBlock();

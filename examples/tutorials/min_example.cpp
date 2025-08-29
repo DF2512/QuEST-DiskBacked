@@ -46,7 +46,7 @@ int main() {
     const int numRuns = 1; 
     std::vector<std::string> diskRoots = {
         
-    };
+    }; // --------------- EDIT THIS VECTOR ----------------- ADD PATH TO DIRECTORY AS STRING ---------------
     
     std::vector<RunData> runData;
     

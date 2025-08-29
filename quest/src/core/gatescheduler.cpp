@@ -292,6 +292,8 @@ std::vector<SubCircuit> GateScheduler::partitionIntoSubcircuits(
     return result;
 }
 
+
+// WIP: UNUSED THUS FAR
 // ─── Quantum Supremacy Circuit ─────────────────────────────
 void GateScheduler::addQSC(int numQubits, int depth) {
     // Initialize random number generator

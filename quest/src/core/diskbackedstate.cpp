@@ -17,6 +17,7 @@
 #include "quest/src/core/randomiser.hpp"
 #include "quest/src/core/localiser.hpp"
 
+// Constructor for DiskBackedState
 DiskBackedState::DiskBackedState(int numQubits_, int numBlocks_, int chunksPerBlock_,
                                  const std::vector<std::string>& diskRoots_, int maxBlocksInMemory_)
     : numQubits(numQubits_),
@@ -93,14 +94,17 @@ DiskBackedState::DiskBackedState(int numQubits_, int numBlocks_, int chunksPerBl
     ioInitialised = true;
 }
 
+// Buffer accessor
 void* DiskBackedState::getAlignedBuffer(int blockBufIndex) const {
     return blockBuffers.at(blockBufIndex);
 }
 
+// Registered chunk buffer accessor
 void* DiskBackedState::getChunkBuffer(int blockBufIndex, int localChunkIndex) const {
     return chunkViews.at(blockBufIndex).at(localChunkIndex);
 }
 
+// File generation helper
 void DiskBackedState::generateChunkPaths() {
     chunkPaths.resize(numChunks);
     for (size_t i = 0; i < numChunks; ++i) {
@@ -223,6 +227,7 @@ void printRingStatus(int submitted,  int ring_size) {
     fflush(stdout);
 }
 
+// Access a single file (for debugging)
 void DiskBackedState::loadChunk(size_t chunkIndex, void* alignedBuf) const {
     ensureIoUringInitialised();
 
@@ -260,6 +265,7 @@ void DiskBackedState::loadChunk(size_t chunkIndex, void* alignedBuf) const {
     io_uring_cqe_seen(&ring, cqe);
 }
 
+// Save a single file (for debugging)
 void DiskBackedState::saveChunk(size_t chunkIndex, void* alignedBuf) const {
     ensureIoUringInitialised();
 
@@ -297,6 +303,7 @@ void DiskBackedState::saveChunk(size_t chunkIndex, void* alignedBuf) const {
     io_uring_cqe_seen(&ring, cqe);
 }
 
+// Block reading
 void DiskBackedState::loadBlock(
     int blockIdx,
     const std::vector<int>& chunkIndices,
@@ -368,6 +375,7 @@ void DiskBackedState::loadBlock(
     }
 }
 
+// Block writing
 void DiskBackedState::saveBlock(
     int blockIdx,
     const std::vector<int>& chunkIndices,
@@ -439,6 +447,7 @@ void DiskBackedState::saveBlock(
     }
 }
 
+// io_uring completion queue thread
 void DiskBackedState::ioCompletionLoop() const {
     using namespace std::chrono;
     const milliseconds idleSleep{1};
@@ -819,7 +828,7 @@ void DiskBackedState::diskBacked_initPlusState() {
         return;
     }
 
-    // --- Synchronisation primitives (match runCircuit() style) ---
+    // --- Synchronisation primitives ---
     std::mutex memMtx;
     std::condition_variable memCv;
     int inFlightBlocks = 0;
@@ -909,7 +918,7 @@ void DiskBackedState::diskBacked_initBlankState() {
         return;
     }
 
-    // --- Synchronisation primitives (match runCircuit() style) ---
+    // --- Synchronisation primitives ---
     std::mutex memMtx;
     std::condition_variable memCv;
     int inFlightBlocks = 0;
@@ -985,6 +994,7 @@ void DiskBackedState::diskBacked_initBlankState() {
     }
 }
 
+// TODO: optimise the probability function using initialisation format
 qreal DiskBackedState::diskBacked_calcTotalProbability() const {
     void* alignedBuf = getChunkBuffer(0,0);
     qreal total = 0.0;
